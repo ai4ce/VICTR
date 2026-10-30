@@ -93,9 +93,9 @@
     node("pool", 184, 232, 142, 52, "Demo pool", "5–12 demos · 1 s chunks", { go: "#pool" });
     node("vfe", 14, 56, 140, 111, "IC-VFE", "SigLIP + Gemma 3 270M", { go: "#icvfe", fill: "#fff8db", stroke: "#e0a400" });
     node("ret", 184, 56, 142, 111, "Retrieve", "argmin |v̂ₜ − v̂ᵢ|", { go: "#vfe-widget" });
-    node("act", 660, 20, 146, 28, "Action chunk", null, { go: "#vla-widget", fs: 11.5, r: 6 });
-    node("vla", 356, 56, 294, 72, "IC-VLA · π0.5 VLM", "block-causal: query reads cₜ, cₜ can't read query", { go: "#icvla", ...CH });
-    node("ae", 660, 56, 146, 72, "Action expert", "flow matching", { go: "#icvla", fill: "#eaf4f7", stroke: "#4b93a8" });
+    node("act", 660, 20, 146, 28, "Action chunk", null, { fs: 11.5, r: 6 });
+    node("vla", 356, 56, 294, 72, "IC-VLA · π0.5 VLM", "block-causal: query reads cₜ, cₜ can't read query", CH);
+    node("ae", 660, 56, 146, 72, "Action expert", "flow matching", { fill: "#eaf4f7", stroke: "#4b93a8" });
     node("ctx", 356, 139, 100, 28, "Context cₜ", null, { go: "#vfe-widget", ...CH, fs: 11.5, r: 5 });
     node("img", 462, 139, 56, 28, "images", null, TOK);
     node("jnt", 524, 139, 52, 28, "joints", null, TOK);
@@ -390,78 +390,4 @@
     render();
   })();
 
-  // ===========================================================================
-  // 3.3 IC-VLA action panel
-  (function vlaWidget() {
-    const root = document.getElementById("vla-widget");
-    const ctxSlot = el("div"), obsSlot = el("div");
-    const ctxHead = el("span");
-    const VW = 800, VH = 240;
-    const s = svg("svg", { viewBox: `0 0 ${VW} ${VH}` });
-    let arm = 1;
-    root.append(
-      el("div.widget-title", { text: "In-context action generation" }),
-      state.picker(),
-      el("div.retrieval-grid", { style: { marginTop: "12px" } },
-        el("div", null, el("h4", null, el("span", { text: "Current observation oₜ" })), obsSlot),
-        el("div", null, el("h4", null, el("span", { text: "Retrieved chunk cₜ" }), ctxHead), ctxSlot)),
-      el("div.action-plot", { style: { marginTop: "12px" } },
-        el("div.controls-row", null, el("span.label", { text: "Arm" }),
-          U.toggle([["0", "Left"], ["1", "Right"]], "1", (v) => { arm = +v; draw(); })),
-        s,
-        el("div.legend", null,
-          el("span", null, el("i.line", { style: { background: "#7a5bb5" } }), "IC-VLA prediction"),
-          el("span", { style: { color: "#999" } }, el("i.dash"), "retrieved chunk's actions"))),
-      playerBar(state.clock),
-      el("p.caption", { text: "End-effector position over the next H = 30 steps, relative to the chunk start (mm). Solid: IC-VLA prediction; dashed: retrieved chunk." }));
-
-    const m = { l: 40, r: 12, t: 10, b: 26 };
-    const pw = VW - m.l - m.r, ph = VH - m.t - m.b;
-    const g = svg("g", { transform: `translate(${m.l},${m.t})` });
-    s.appendChild(g);
-    const chColors = ["#c25b5b", "#4f9a37", "#4b93a8"];
-    let obsMedia, ctxMedia, lastTick = -1;
-
-    // Plots and the context clip only change when a new inference tick starts.
-    function draw() {
-      const tk = state.task, t = state.clock.t;
-      const c = tk.retrieve(t);
-      ctxHead.textContent = `demo ${c.demo + 1} · ${c.start.toFixed(1)}–${c.end.toFixed(1)} s`;
-      obsMedia.setSub(`v̂ₜ = ${c.query.toFixed(2)}`);
-      obsMedia.setProgress(t / tk.length);
-
-      const demo = tk.demoActions(c)[arm], pred = tk.predictedActions(t, c)[arm];
-      const all = demo.flat().concat(pred.flat());
-      const lo = Math.min(...all) - 2, hi = Math.max(...all) + 2;
-      const X = (k) => (k / (SIM.H - 1)) * pw, Y = (v) => ph * (1 - (v - lo) / (hi - lo));
-      g.replaceChildren();
-      const axis = svg("g.axis");
-      for (let i = 0; i <= 4; i++) {
-        const v = lo + ((hi - lo) * i) / 4;
-        axis.appendChild(svg("line", { x1: 0, x2: pw, y1: Y(v), y2: Y(v) }));
-        axis.appendChild(svg("text", { x: -5, y: Y(v) + 4, "text-anchor": "end", text: v.toFixed(hi - lo < 20 ? 1 : 0) }));
-      }
-      [0, 10, 20, 29].forEach((k) => axis.appendChild(svg("text", { x: X(k), y: ph + 16, "text-anchor": "middle", text: k === 0 ? "t" : `t+${k}` })));
-      g.appendChild(axis);
-      const line = (arr) => arr.map((v, k) => `${k ? "L" : "M"}${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join("");
-      demo.forEach((ch, i) => g.appendChild(svg("path", { d: line(ch), fill: "none", stroke: chColors[i], "stroke-width": 1.4, "stroke-dasharray": "4 3", opacity: 0.55 })));
-      pred.forEach((ch, i) => g.appendChild(svg("path", { d: line(ch), fill: "none", stroke: chColors[i], "stroke-width": 2.2 })));
-      ["x", "y", "z"].forEach((n, i) => g.appendChild(svg("text", { x: pw - 2, y: Y(pred[i][SIM.H - 1]) - 5, "text-anchor": "end", "font-size": 11, "font-weight": 700, fill: chColors[i], text: n })));
-    }
-
-    state.onTask((tk) => {
-      obsMedia = media(tk.cfg.rollout.video, "Query rollout", "");
-      obsSlot.replaceChildren(obsMedia);
-      ctxMedia = media(tk.cfg.rollout.context, "Context chunk", "");
-      ctxMedia.classList.add("chunk-frame");
-      ctxSlot.replaceChildren(ctxMedia);
-      lastTick = -1;
-    });
-    state.clock.on((c) => {
-      obsMedia.sync(c.t, c.playing);
-      ctxMedia.sync(c.t, c.playing);
-      const k = state.task.tickIndex(c.t);
-      if (k !== lastTick) { lastTick = k; draw(); }
-    });
-  })();
 })();

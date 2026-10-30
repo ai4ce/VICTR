@@ -82,11 +82,6 @@
 <p>Each reference frame is compressed to 16 summary tokens per camera; the current observation keeps all 256 tokens per view. The 18-layer Gemma&nbsp;3 270M decoder uses a <strong>hybrid</strong> mask: context blocks attend within themselves, and at layers 6, 12 and 18 <strong>block-causal</strong> edges let each block read the ones before it. The query block reads all context, and a learned value token reads everything. Hover a cell to see its attention.</p>
 <div class="widget" id="attn-widget"></div>
 
-<!-- ---------------------------------------------------------------- 3.3 -->
-<h2 id="icvla" data-nav="In-context VLA">In-context VLA</h2>
-<p>The retrieved chunk's camera images, joint states and FAST action tokens are placed <em>before</em> the query as <span class="math">[c<sub>t</sub>, o<sub>t</sub>, ℓ]</span>. Block-causal attention lets the query read the demonstration but not the reverse; the action expert then generates <span class="math">a<sub>t:t+H</sub></span>.</p>
-<div class="widget" id="vla-widget"></div>
-
 <!-- =================================================================
      4. Evaluations
 ================================================================== -->
@@ -115,16 +110,8 @@
 <div class="widget chart" id="train-deploy-chart"></div>
 
 <!-- =================================================================
-     5. Limitations / citation
+     5. Citation
 ================================================================== -->
-<h1 id="limitations" data-nav="Limitations">Limitations &amp; future work</h1>
-<ul>
-    <li><strong>Absolute performance on unseen tasks is still low.</strong> 23.8% out-of-domain success is a large gain over the baselines, but in-context adaptation is not yet reliable enough for practical use.</li>
-    <li><strong>One physical environment.</strong> We vary objects, distractors and placement, but not the environment itself.</li>
-    <li><strong>IC-VFE's context budget.</strong> Fitting a full reference demonstration requires aggressive spatial pooling, which may hurt on tasks where fine visual detail matters.</li>
-</ul>
-<p>Natural next steps include more efficient attention or test-time-training techniques to relax the context budget, conditioning on human demonstration videos, and porting progress-informed retrieval to other policy backbones. Any policy that adapts from demonstrations in its context faces the same question of which demonstration to include.</p>
-
 <h2 id="citation" data-nav="Citation">Citation</h2>
 <div class="bibtex">@inproceedings{victr2026,
   title     = {VICTR: Value-Informed In-Context Learning for
