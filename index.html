@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>VICTR: Value-Informed In-Context Learning for VLAs</title>
     <meta name="description" content="VICTR retrieves demonstration context by task progress, not appearance, using an in-context value function estimator." />
-    <!-- Double-blind: no analytics, no author metadata, no canonical URL. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -21,7 +20,18 @@
 ================================================================== -->
 <header class="masthead">
     <h1 class="title"><span class="title-name">VICTR</span>: Value-Informed In-Context Learning<br>for Vision-Language-Action Models</h1>
-    <p class="masthead-authors">Anonymous Authors</p>
+    <p class="masthead-authors">
+        <span class="author">Luca Macesanu<sup>*</sup></span>,
+        <span class="author">Tianluo Zhang<sup>*</sup></span>,
+        <span class="author">Aditya Patil</span>,
+        <span class="author">Archit Sharma</span>,
+        <span class="author">Kevin Angers</span>,
+        <span class="author">Christopher M. Clark</span>,
+        <span class="author">Chen Feng</span>,
+        <span class="author">Juexiao Zhang<sup>&dagger;</sup></span>
+    </p>
+    <p class="masthead-affil">New York University</p>
+    <p class="masthead-note"><sup>*</sup>Equal contribution &nbsp;&middot;&nbsp; <sup>&dagger;</sup>Corresponding author</p>
     <div class="masthead-foot">
         <nav class="project-links" aria-label="Paper, code, models">
             <a class="project-link" href="VICTR_PtA.pdf" target="_blank">
@@ -49,45 +59,54 @@
 </section>
 
 <!-- =================================================================
+     1.5 Abstract
+================================================================== -->
+<h1 id="abstract" data-nav="Abstract">Abstract</h1>
+<p>Recent advances in robot foundation models have highlighted the potential of in-context learning (ICL) for adapting robot behavior from demonstrations without further fine-tuning. Previous work has used retrieval-based post-training to equip pretrained vision-language-action (VLA) models with the capability for ICL by teaching them to condition action predictions on retrieved visually-relevant demonstration chunks. However, the effectiveness of retrieval hinges on selecting context relevant to the current execution stage, which visual similarity alone may not capture. We introduce VICTR, a framework enabling in-context learning in VLAs via progress-informed context retrieval built around an In-Context Value Function Estimator (IC-VFE). IC-VFE conditions on a reference demonstration video, a language instruction and the current observation to estimate task-relative <em>progress</em>. By conditioning progress estimation on a reference demonstration, IC-VFE can align the current state with a demonstrated execution even for tasks unseen during training. VICTR uses the estimated progress to select demonstration chunks at corresponding stages of execution and supplies them to a π<sub>0.5</sub> policy post-trained for in-context action generation. On unseen out-of-domain real-world manipulation tasks, VICTR raises the success rate from 6.2% for a fine-tuned π<sub>0.5</sub> baseline to 23.8% and nearly doubles the task progress rate, from 28.9% to 55.5%.</p>
+
+<!-- =================================================================
      2. Why context
 ================================================================== -->
 <h1 id="why" data-nav="Why context?">Why does context matter?</h1>
-<p>A fine-tuned VLA handles its training tasks but breaks when objects or task composition change. VICTR keeps the weights fixed and instead gives the policy the chunk of a fresh demonstration that matches its current stage of the task.</p>
+<p>The real world rarely repeats itself. Objects change, scenes get cluttered, and familiar skills are recombined into new tasks. A useful robot has to keep adapting, the way a person can pick up a new task after watching it done once or twice. Fine-tuning for every new situation is slow and has to be repeated whenever the task or environment changes. <strong>In-context learning</strong> takes another route: demonstrations of the new task are given to the policy as context, and its weights stay fixed.</p>
+<p>Today's VLAs are not built for this. A fine-tuned π<sub>0.5</sub> does well on tasks from its training domain but often fails out of domain, for example with novel objects or new task compositions. VICTR gives π<sub>0.5</sub> demonstration context during both training and deployment. At deployment, the new task is learned from a handful of demonstrations in context, with no parameter updates.</p>
 <div class="widget" id="why-widget"></div>
 
 <!-- =================================================================
      3. How it works
 ================================================================== -->
-<h1 id="how" data-nav="How it works">How it works</h1>
-<p>An <strong>In-Context Value Function Estimator (IC-VFE)</strong> estimates task progress against a reference demonstration, and the demo chunk at the same progress is <strong>retrieved</strong> from a small pool. An <strong>in-context VLA</strong> built on π0.5 takes that chunk as context and generates the next action chunk. Neither model is updated at deployment.</p>
+<h1 id="how" data-nav="How VICTR works">How VICTR works</h1>
+<p>VICTR has two parts. An <strong>In-Context Value Function Estimator (IC-VFE)</strong> estimates task progress against a reference demonstration, and the demo chunk at the same progress is <strong>retrieved</strong> from a demonstration pool. An <strong>in-context VLA (IC-VLA)</strong> built on π<sub>0.5</sub> takes that chunk as context and generates the next action chunk. Neither model is updated at deployment.</p>
 <div class="widget pipeline" id="pipeline"></div>
 
 <!-- ---------------------------------------------------------------- 3.1 -->
 <h2 id="pool" data-nav="Demonstration pool">Building the demonstration pool</h2>
-<p>For each task, a pool of 5 to 12 demonstrations is collected at deployment time and cut into one-second chunks matching the VLA's action horizon (<span class="math">H</span>&nbsp;=&nbsp;30 at 30&nbsp;Hz). One demonstration serves as IC-VFE's reference. Each chunk is keyed by its progress <span class="math">v̂<sub>i</sub></span> and a DINOv2 embedding <span class="math">h<sub>i</sub></span>.</p>
+<p>For each task, a pool of 5 to 10 demonstrations is collected at deployment time and cut into one-second chunks matching the VLA's action horizon (<span class="math">H</span>&nbsp;=&nbsp;30 at 30&nbsp;Hz). One demonstration serves as IC-VFE's reference. Each chunk is keyed by its progress <span class="math">v̂<sub>i</sub></span> and a DINOv2 embedding <span class="math">h<sub>i</sub></span>.</p>
 <div class="widget poolbuilder" id="poolbuilder"></div>
 
 <!-- ---------------------------------------------------------------- 3.2 -->
 <h2 id="icvfe" data-nav="In-context value">In-context value function estimation</h2>
-<p>Instead of asking which demo frame looks most like the current one, VICTR asks <em>how far along the task the robot is</em>. IC-VFE reads the reference demonstration as context and predicts the current progress <span class="math">v̂<sub>t</sub></span>&nbsp;∈&nbsp;[0,&nbsp;1] as a distribution over 201 bins. Since the demonstration defines progress, the frozen model transfers to unseen tasks.</p>
+<p>Instead of asking which demo frame looks most like the current one, VICTR asks <em>how far along the task the robot is</em>. IC-VFE reads the reference demonstration as context and predicts the current progress <span class="math">v̂<sub>t</sub></span>&nbsp;∈&nbsp;[0,&nbsp;1] as a distribution over 201 bins. Because IC-VFE infers progress from the demonstration in its context instead of relying on tasks memorized in training, it can estimate progress on unseen tasks without fine-tuning, helping the policy adapt to them.</p>
 <p>Each step retrieves the chunk with the closest progress,</p>
 <div class="eq math">i<sub>t</sub> = argmin<sub>i</sub> |v̂<sub>t</sub> − v̂<sub>i</sub>|.</div>
 <div class="widget" id="vfe-widget"></div>
+<p>The estimates are not perfect, but they track the rollout: progress rises as the robot moves through the task and drops when an attempt fails. The retrieved chunks, in turn, generally show what the robot should do next.</p>
 
 <p>Visual similarity is ambiguous: similar-looking frames can come from different stages, and distractors shift the embedding. Retrievals from our evaluation, by signal:</p>
 <div class="widget" id="fig5-widget"></div>
 
 <!-- --------------------------------------------------------------- 3.25 -->
-<h2 id="attention" data-nav="Attention pattern">The attention pattern</h2>
-<p>Each reference frame is compressed to 16 summary tokens per camera; the current observation keeps all 256 tokens per view. The 18-layer Gemma&nbsp;3 270M decoder uses a <strong>hybrid</strong> mask: context blocks attend within themselves, and at layers 6, 12 and 18 <strong>block-causal</strong> edges let each block read the ones before it. The query block reads all context, and a learned value token reads everything. Hover a cell to see its attention.</p>
+<h2 id="attention" data-nav="Attention pattern">The attention pattern in IC-VFE</h2>
+<p>Each reference frame is compressed to 16 summary tokens per camera; the current observation keeps all 256 tokens per view. The 18-layer Gemma&nbsp;3 270M decoder uses <strong>hybrid</strong> attention: context blocks attend within themselves, and at layers 6, 12 and 18 <strong>block-causal</strong> attention lets each block read the ones before it. The query block reads all context, and a learned value token reads everything. Hover a cell to see its attention.</p>
 <div class="widget" id="attn-widget"></div>
 
 <!-- =================================================================
      4. Evaluations
 ================================================================== -->
 <h1 id="results" data-nav="Evaluations">Evaluations</h1>
-<p>We evaluate on a bimanual robot with 16 real-world tasks: 8 in-domain and 8 out-of-domain, where the out-of-domain tasks use novel objects, new skill compositions or semantically new tasks. Each policy gets 10 rollouts per task. Solid bars show binary success; the lighter extension adds partial credit for completed milestones (task progress).</p>
+<p>We evaluate on a bimanual robot with 16 real-world tasks: 8 in-domain and 8 out-of-domain, where the out-of-domain tasks use novel objects, new skill compositions or semantically new tasks. Each policy gets 10 rollouts per task. Solid bars show binary task success rate; the lighter extension shows task progress, partial credit for completed milestones.</p>
 <div class="widget chart" id="main-chart"></div>
+<p class="caption"><strong>π<sub>0.5</sub></strong>: fine-tuned baseline without context. <strong>Vision</strong>: retrieves context by DINOv2 visual similarity (the RICL recipe). <strong>VICTR</strong>: retrieves by IC-VFE progress. <strong>VICTR<sub>vision</sub></strong>: combines the progress and DINOv2 visual distances, each normalized across the pool.</p>
 
 <h2 id="per-task" data-nav="Per-task results">Per-task results</h2>
 <div class="widget" id="eval-browser"></div>
@@ -106,7 +125,7 @@
 <div class="widget chart" id="demo-count-chart"></div>
 
 <h3>Must training and deployment signals match?</h3>
-<p>Each policy does best with the retrieval signal it was trained on, but a poor signal at deployment cannot be made up for.</p>
+<p>Each policy generally does best with the retrieval signal it was trained on. Matching alone is not enough, though: out of domain, the vision-trained policy with matched vision retrieval still falls well short of VICTR with IC-VFE at both training and test.</p>
 <div class="widget chart" id="train-deploy-chart"></div>
 
 <!-- =================================================================
@@ -116,7 +135,9 @@
 <div class="bibtex">@inproceedings{victr2026,
   title     = {VICTR: Value-Informed In-Context Learning for
                Vision-Language-Action Models},
-  author    = {Anonymous Authors},
+  author    = {Macesanu, Luca and Zhang, Tianluo and Patil, Aditya and
+               Sharma, Archit and Angers, Kevin and Clark, Christopher M. and
+               Feng, Chen and Zhang, Juexiao},
   booktitle = {Under review},
   year      = {2026}
 }</div>

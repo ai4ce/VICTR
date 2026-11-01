@@ -22,9 +22,9 @@ window.VICTR_SITE = {
   // Table I: agreement with human-annotated progress (Kendall tau_b, Pearson r).
   vfeTable: [
     { group: "Offline (privileged)", name: "Robo-Dopamine",    ind: [0.66, 0.83], ood: [0.69, 0.86] },
-    { group: "Offline (privileged)", name: "Robo-Dopamine FT", ind: [0.61, 0.73], ood: [0.74, 0.87] },
+    { group: "Offline (privileged)", name: "Robo-Dopamine (fine-tuned)", ind: [0.61, 0.73], ood: [0.74, 0.87] },
     { group: "Offline (privileged)", name: "Robometer",        ind: [0.46, 0.60], ood: [0.53, 0.69] },
-    { group: "Offline (privileged)", name: "Robometer FT",     ind: [0.52, 0.69], ood: [0.59, 0.75] },
+    { group: "Offline (privileged)", name: "Robometer (fine-tuned)",     ind: [0.52, 0.69], ood: [0.59, 0.75] },
     { group: "Offline (privileged)", name: "TOPReward",        ind: [0.52, 0.60], ood: [0.57, 0.71] },
     { group: "Offline (privileged)", name: "GVL",              ind: [0.20, 0.25], ood: [0.24, 0.30] },
     { group: "Online", name: "IC-VFE (ours)",       ind: [0.53, 0.65], ood: [0.54, 0.68], ours: true },
@@ -32,12 +32,12 @@ window.VICTR_SITE = {
     { group: "Online", name: "  no block embedding",ind: [0.46, 0.55], ood: [0.37, 0.45] },
     { group: "Online", name: "RECAP",               ind: [0.48, 0.61], ood: [0.44, 0.58] },
     { group: "Online", name: "Robometer",           ind: [0.13, 0.23], ood: [0.23, 0.35] },
-    { group: "Online", name: "Robometer FT",        ind: [0.15, 0.30], ood: [0.23, 0.37] },
+    { group: "Online", name: "Robometer (fine-tuned)",        ind: [0.15, 0.30], ood: [0.23, 0.37] },
   ],
 
   // Fig. 6: VFE used at deployment (8-task ablation subset, icl_promo_vids/final_results.csv). [success, progress]
   vfeDeploy: [
-    { name: "Robometer FT", fill: "#FFC5C5", ink: "#c25b5b", ind: [75.0, 80.6], ood: [12.5, 28.8] },
+    { name: "Robometer (fine-tuned)", fill: "#FFC5C5", ink: "#c25b5b", ind: [75.0, 80.6], ood: [12.5, 28.8] },
     { name: "RECAP",        fill: "#C0E5EF", ink: "#4b93a8", ind: [52.5, 67.5], ood: [0.0, 18.8] },
     { name: "Robometer",    fill: "#B4E5A2", ink: "#4f9a37", ind: [47.5, 57.5], ood: [15.0, 29.2] },
     { name: "IC-VFE",       fill: "#FFE89F", ink: "#b8901a", ind: [75.0, 88.8], ood: [32.5, 62.7] },

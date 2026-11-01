@@ -39,7 +39,7 @@
     el("div.controls-row", null, U.toggle([["act", "Attention"], ["mask", "Mask only"]], mode, (m) => { mode = m; paint(); })),
     el("div.legend", null,
       el("span", null, el("i", { style: { background: "var(--attend)" } }), "attended in every layer"),
-      el("span", null, el("i", { style: { background: "var(--causal)" } }), "block-causal edge (layers 6, 12, 18)"),
+      el("span", null, el("i", { style: { background: "var(--causal)" } }), "block-causal attention (layers 6, 12, 18)"),
       el("span", null, el("i", { style: { background: "#fff" } }), "masked")),
     meta);
   root.append(el("div.widget-title", { text: "IC-VFE attention, 18-layer Gemma 3 270M" }),
@@ -78,7 +78,7 @@
     rowHi = svg("rect", { x: -2, width: N * cell + 4, height: cell, rx: 3, fill: "none", stroke: "#2c2f31", "stroke-width": 1.5, opacity: 0 });
     grid.appendChild(rowHi);
     meta.textContent = `Rows attend to columns: each second of the reference demo, then the observation Oₜ, the instruction ℓ and the value token r. ` +
-      `Query: a held-out demonstration ${task.query_sec} s in (progress ${task.progress.toFixed(2)}).`;
+      `Example query taken from a held-out demonstration ${task.query_sec} s in (progress ${task.progress.toFixed(2)}).`;
     paint();
   }
   s.addEventListener("mouseleave", () => { hoverRow = -1; if (rowHi) rowHi.setAttribute("opacity", 0); hideTip(); paint(); });

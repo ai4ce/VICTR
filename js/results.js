@@ -170,7 +170,7 @@
     const cols = [["ind", 0, "InD τ_b"], ["ind", 1, "InD r"], ["ood", 0, "OOD τ_b"], ["ood", 1, "OOD r"]];
     const table = el("table.vfe-table");
     root.append(el("div.widget-title", { text: "Agreement with human progress annotations (Table I)" }), table,
-      el("p.caption", { text: "Click a metric to sort. Underlined: best online value model. Offline models use privileged future frames and can't run during a rollout." }));
+      el("p.caption", { text: "Click a metric to sort. Underlined: best online value model. Offline models use privileged future information (e.g. the episode's final frame), so they can't run during a rollout. We use them to pick a training signal: the best, Robo-Dopamine, provides the pseudo-labels that train IC-VFE." }));
 
     function best(group, d, i) { return Math.max(...rows.filter((r) => r.group === group).map((r) => r[d][i])); }
 
@@ -179,7 +179,7 @@
         ...cols.map(([d, i, lab], ci) => el("th", { text: lab + (sortKey === ci ? " ↓" : ""), onclick: () => { sortKey = sortKey === ci ? null : ci; render(); } })));
       const out = [head];
       ["Online", "Offline (privileged)"].forEach((group) => {
-        out.push(el("tr", null, el("td.group", { colspan: 5, text: group })));
+        out.push(el("tr", null, el("td.group", { colspan: 5, text: group === "Online" ? group : "Offline (privileged; we pick the best as pseudo-labels to train IC-VFE)" })));
         let rs = rows.filter((r) => r.group === group);
         if (sortKey != null) { const [d, i] = cols[sortKey]; rs = [...rs].sort((a, b) => b[d][i] - a[d][i]); }
         rs.forEach((r) => {
@@ -240,5 +240,5 @@
 
   // Fig. 8
   splitBars(document.getElementById("train-deploy-chart"),
-    SITE.trainDeploy.map((x) => ({ ...x, name: x.name.split(" + ")[0], sub: `+ ${x.deploy} at test` })), {});
+    SITE.trainDeploy.map((x) => { const sig = (s) => (s === "DINOv2" ? "Vision" : s); return { ...x, name: `${sig(x.train)} at train`, sub: `${sig(x.deploy)} at test` }; }), {});
 })();

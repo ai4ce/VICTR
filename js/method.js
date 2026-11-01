@@ -90,7 +90,7 @@
     }
     const CH = { fill: "#f3eefc", stroke: "#7a5bb5" }, TOK = { fill: "#f6f7f8", fs: 11, r: 5 };
     node("obs", 14, 232, 140, 52, "Observation oₜ", "3 cams · joints · task", { go: "#icvfe" });
-    node("pool", 184, 232, 142, 52, "Demo pool", "5–12 demos · 1 s chunks", { go: "#pool" });
+    node("pool", 184, 232, 142, 52, "Demo pool", "5–10 demos · 1 s chunks", { go: "#pool" });
     node("vfe", 14, 56, 140, 111, "IC-VFE", "SigLIP + Gemma 3 270M", { go: "#icvfe", fill: "#fff8db", stroke: "#e0a400" });
     node("ret", 184, 56, 142, 111, "Retrieve", "argmin |v̂ₜ − v̂ᵢ|", { go: "#vfe-widget" });
     node("act", 660, 20, 146, 28, "Action chunk", null, { fs: 11.5, r: 6 });
@@ -190,7 +190,7 @@
     const steps = [
       `${demos.length} demonstrations are recorded for the task at deployment time. None are used for training.`,
       "One of them is the reference IC-VFE is conditioned on.",
-      "Every demonstration is cut into one-second chunks, the IC-VLA's action horizon (H = 30 steps), starting every 5 frames.",
+      "Every demonstration is cut into one-second chunks, the IC-VLA's action horizon (H = 30 steps).",
       "IC-VFE labels each chunk with its progress v̂ᵢ (darker gold = further along).",
       "Each chunk is indexed by its progress (and optionally a DINOv2 embedding) and stores the observation and action tokens to place in context.",
     ];
