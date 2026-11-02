@@ -91,6 +91,7 @@ main, .masthead, .page-hero { max-width: var(--content-width); margin: 0 auto; }
 .project-link:hover { background: #1f1f1f; }
 .project-link.disabled { background: #8a8d90; pointer-events: none; }
 .project-link .hf { font-size: 16px; line-height: 1; }
+.project-link .ai { font-size: 16px; line-height: 1; }
 .project-link svg { width: 15px; height: 15px; }
 
 @media (max-width: 600px) { .title { font-size: 28px; } }
