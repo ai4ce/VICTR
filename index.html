@@ -63,17 +63,14 @@
      1.5 Abstract
 ================================================================== -->
 <h1 id="abstract" data-nav="Abstract">Abstract</h1>
-<p>Recent advances in robot foundation models have highlighted the potential of in-context learning (ICL) for adapting robot behavior from demonstrations without further fine-tuning. Previous work has used retrieval-based post-training to equip pretrained vision-language-action (VLA) models with the capability for ICL by teaching them to condition action predictions on retrieved visually-relevant demonstration chunks. However, the effectiveness of retrieval hinges on selecting context relevant to the current execution stage, which <strong>visual similarity alone may not capture</strong>.</p>
-<p>We introduce <strong>VICTR</strong>, a framework enabling in-context learning in VLAs via <strong>progress-informed context retrieval</strong> built around an <strong>In-Context Value Function Estimator (IC-VFE)</strong>. IC-VFE conditions on a reference demonstration video, a language instruction and the current observation to estimate task-relative <em>progress</em>. By conditioning progress estimation on a reference demonstration, IC-VFE can align the current state with a demonstrated execution even for <strong>tasks unseen during training</strong>.</p>
-<p>VICTR uses the estimated progress to select demonstration chunks at corresponding stages of execution and supplies them to a π<sub>0.5</sub> policy post-trained for in-context action generation. On unseen out-of-domain real-world manipulation tasks, VICTR raises the success rate from 6.2% for a fine-tuned π<sub>0.5</sub> baseline to <strong>23.8%</strong> and nearly doubles the task progress rate, from 28.9% to <strong>55.5%</strong>.</p>
+<p>Recent advances in robot foundation models have highlighted the potential of in-context learning (ICL) for adapting robot behavior from demonstrations without further fine-tuning. Previous work has used retrieval-based post-training to equip pretrained vision-language-action (VLA) models with the capability for ICL by teaching them to condition action predictions on retrieved visually-relevant demonstration chunks. However, the effectiveness of retrieval hinges on selecting context relevant to the current execution stage, which visual similarity alone may not capture. We introduce VICTR, a framework enabling in-context learning in VLAs via progress-informed context retrieval built around an In-Context Value Function Estimator (IC-VFE). IC-VFE conditions on a reference demonstration video, a language instruction and the current observation to estimate task-relative <em>progress</em>. By conditioning progress estimation on a reference demonstration, IC-VFE can align the current state with a demonstrated execution even for tasks unseen during training. VICTR uses the estimated progress to select demonstration chunks at corresponding stages of execution and supplies them to a π<sub>0.5</sub> policy post-trained for in-context action generation. On unseen out-of-domain real-world manipulation tasks, VICTR raises the success rate from 6.2% for a fine-tuned π<sub>0.5</sub> baseline to 23.8% and nearly doubles the task progress rate, from 28.9% to 55.5%.</p>
 
 <!-- =================================================================
      2. Why context
 ================================================================== -->
 <h1 id="why" data-nav="Why context?">Why does context matter?</h1>
-<p>The real world rarely repeats itself. Objects change, scenes get cluttered, and familiar skills are recombined into new tasks. A useful robot has to keep adapting, the way a person can pick up a new task after watching it done once or twice.</p>
-<p>Fine-tuning for every new situation is slow and has to be repeated whenever the task or environment changes. <strong>In-context learning</strong> takes another route: demonstrations of the new task are given to the policy as context, and its weights stay fixed.</p>
-<p>Today's VLAs are not built for this. A fine-tuned π<sub>0.5</sub> does well on tasks from its training domain but <strong>often fails out of domain</strong>, for example with novel objects or new task compositions. VICTR gives π<sub>0.5</sub> demonstration context during both training and deployment. At deployment, the new task is learned from a handful of demonstrations in context, with <strong>no parameter updates</strong>.</p>
+<p>The real world rarely repeats itself. Objects change, scenes get cluttered, and familiar skills are recombined into new tasks. A useful robot has to keep adapting, the way a person can pick up a new task after watching it done once or twice. Fine-tuning for every new situation is slow and has to be repeated whenever the task or environment changes. <strong>In-context learning</strong> takes another route: demonstrations of the new task are given to the policy as context, and its weights stay fixed.</p>
+<p>Today's VLAs are not built for this. A fine-tuned π<sub>0.5</sub> does well on tasks from its training domain but often fails out of domain, for example with novel objects or new task compositions. VICTR gives π<sub>0.5</sub> demonstration context during both training and deployment. At deployment, the new task is learned from a handful of demonstrations in context, with no parameter updates.</p>
 <div class="widget" id="why-widget"></div>
 
 <!-- =================================================================
@@ -85,33 +82,30 @@
 
 <!-- ---------------------------------------------------------------- 3.1 -->
 <h2 id="pool" data-nav="Demonstration pool">Building the demonstration pool</h2>
-<p>For each task, a pool of <strong>5 to 10 demonstrations</strong> is collected at deployment time and cut into <strong>one-second chunks</strong> matching the VLA's action horizon (<span class="math">H</span>&nbsp;=&nbsp;30 at 30&nbsp;Hz). One demonstration serves as IC-VFE's reference. Each chunk is keyed by its progress <span class="math">v̂<sub>i</sub></span> and a DINOv2 embedding <span class="math">h<sub>i</sub></span>.</p>
+<p>For each task, a pool of 5 to 10 demonstrations is collected at deployment time and cut into one-second chunks matching the VLA's action horizon (<span class="math">H</span>&nbsp;=&nbsp;30 at 30&nbsp;Hz). One demonstration serves as IC-VFE's reference. Each chunk is keyed by its progress <span class="math">v̂<sub>i</sub></span> and a DINOv2 embedding <span class="math">h<sub>i</sub></span>.</p>
 <div class="widget poolbuilder" id="poolbuilder"></div>
 
 <!-- ---------------------------------------------------------------- 3.2 -->
 <h2 id="icvfe" data-nav="In-context value">In-context value function estimation</h2>
-<p>Instead of asking which demo frame looks most like the current one, VICTR asks <strong><em>how far along the task the robot is</em></strong>. IC-VFE reads the reference demonstration as context and predicts the current progress <span class="math">v̂<sub>t</sub></span>&nbsp;∈&nbsp;[0,&nbsp;1] as a distribution over 201 bins.</p>
-<p>Because IC-VFE infers progress from the demonstration in its context instead of relying on tasks memorized in training, it can <strong>estimate progress on unseen tasks without fine-tuning</strong>, helping the policy adapt to them.</p>
+<p>Instead of asking which demo frame looks most like the current one, VICTR asks <em>how far along the task the robot is</em>. IC-VFE reads the reference demonstration as context and predicts the current progress <span class="math">v̂<sub>t</sub></span>&nbsp;∈&nbsp;[0,&nbsp;1] as a distribution over 201 bins. Because IC-VFE infers progress from the demonstration in its context instead of relying on tasks memorized in training, it can estimate progress on unseen tasks without fine-tuning, helping the policy adapt to them.</p>
 <p>Each step retrieves the chunk with the closest progress,</p>
 <div class="eq math">i<sub>t</sub> = argmin<sub>i</sub> |v̂<sub>t</sub> − v̂<sub>i</sub>|.</div>
 <div class="widget" id="vfe-widget"></div>
 <p>The estimates are not perfect, but they track the rollout: progress rises as the robot moves through the task and drops when an attempt fails. The retrieved chunks, in turn, generally show what the robot should do next.</p>
 
-<p><strong>Visual similarity is ambiguous</strong>: similar-looking frames can come from different stages, and distractors shift the embedding. Retrievals from our evaluation, by signal:</p>
+<p>Visual similarity is ambiguous: similar-looking frames can come from different stages, and distractors shift the embedding. Retrievals from our evaluation, by signal:</p>
 <div class="widget" id="fig5-widget"></div>
 
 <!-- --------------------------------------------------------------- 3.25 -->
 <h2 id="attention" data-nav="Attention pattern">The attention pattern in IC-VFE</h2>
-<p>Each reference frame is compressed to 16 summary tokens per camera; the current observation keeps all 256 tokens per view.</p>
-<p>The 18-layer Gemma&nbsp;3 270M decoder uses <strong>hybrid</strong> attention: context blocks attend within themselves, and at layers 6, 12 and 18 <strong>block-causal</strong> attention lets each block read the ones before it. The query block reads all context, and a learned value token reads everything. Hover a cell to see its attention.</p>
+<p>Each reference frame is compressed to 16 summary tokens per camera; the current observation keeps all 256 tokens per view. The 18-layer Gemma&nbsp;3 270M decoder uses <strong>hybrid</strong> attention: context blocks attend within themselves, and at layers 6, 12 and 18 <strong>block-causal</strong> attention lets each block read the ones before it. The query block reads all context, and a learned value token reads everything. Hover a cell to see its attention.</p>
 <div class="widget" id="attn-widget"></div>
 
 <!-- =================================================================
      4. Evaluations
 ================================================================== -->
 <h1 id="results" data-nav="Evaluations">Evaluations</h1>
-<p>We evaluate on a bimanual robot with <strong>16 real-world tasks</strong>: 8 in-domain and 8 out-of-domain, where the out-of-domain tasks use novel objects, new skill compositions or semantically new tasks. Each policy gets <strong>10 rollouts per task</strong>.</p>
-<p>Solid bars show binary task success rate; the lighter extension shows task progress, partial credit for completed milestones.</p>
+<p>We evaluate on a bimanual robot with 16 real-world tasks: 8 in-domain and 8 out-of-domain, where the out-of-domain tasks use novel objects, new skill compositions or semantically new tasks. Each policy gets 10 rollouts per task. Solid bars show binary task success rate; the lighter extension shows task progress, partial credit for completed milestones.</p>
 <div class="widget chart" id="main-chart"></div>
 <p class="caption"><strong>π<sub>0.5</sub></strong>: fine-tuned baseline without context. <strong>Vision</strong>: retrieves context by DINOv2 visual similarity (the RICL recipe). <strong>VICTR</strong>: retrieves by IC-VFE progress. <strong>VICTR<sub>vision</sub></strong>: combines the progress and DINOv2 visual distances, each normalized across the pool.</p>
 
@@ -120,19 +114,19 @@
 
 <h2 id="analysis" data-nav="Analysis">Analysis</h2>
 <h3>Does context improve online value estimation?</h3>
-<p>We compare each value model's predictions with human-annotated progress curves. <strong>IC-VFE agrees best</strong> of all the <em>online</em> estimators (models that can run during a rollout). Removing the reference demonstration <strong>roughly halves its agreement</strong>.</p>
+<p>We compare each value model's predictions with human-annotated progress curves. IC-VFE agrees best of all the <em>online</em> estimators (models that can run during a rollout). Removing the reference demonstration roughly halves its agreement.</p>
 <div class="widget" id="vfe-table"></div>
 
 <h3>Does better value estimation give a better policy?</h3>
-<p>We keep the IC-VLA fixed and swap the value estimator used for retrieval at deployment. With IC-VFE, out-of-domain progress reaches <strong>62.7%</strong>, against 29.2% for the best alternative.</p>
+<p>We keep the IC-VLA fixed and swap the value estimator used for retrieval at deployment. With IC-VFE, out-of-domain progress reaches 62.7%, against 29.2% for the best alternative.</p>
 <div class="widget chart" id="vfe-deploy-chart"></div>
 
 <h3>How many demonstrations are needed?</h3>
-<p>Performance improves with pool size. Out of domain, it is <strong>still rising at ten demonstrations</strong>.</p>
+<p>Performance improves with pool size. Out of domain, it is still rising at ten demonstrations.</p>
 <div class="widget chart" id="demo-count-chart"></div>
 
 <h3>Must training and deployment signals match?</h3>
-<p>Each policy generally does best with the retrieval signal it was trained on. <strong>Matching alone is not enough</strong>, though: out of domain, the vision-trained policy with matched vision retrieval still falls well short of VICTR with IC-VFE at both training and test.</p>
+<p>Each policy generally does best with the retrieval signal it was trained on. Matching alone is not enough, though: out of domain, the vision-trained policy with matched vision retrieval still falls well short of VICTR with IC-VFE at both training and test.</p>
 <div class="widget chart" id="train-deploy-chart"></div>
 
 <!-- =================================================================
