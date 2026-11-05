@@ -74,9 +74,10 @@ main, .masthead, .page-hero { max-width: var(--content-width); margin: 0 auto; }
 
 .masthead-authors { margin: 16px auto 0; max-width: 760px; font-size: 18px; line-height: 1.6; color: var(--ink-strong); }
 .masthead-authors .author { white-space: nowrap; }
-.masthead-authors sup, .masthead-note sup { font-size: 0.65em; }
+.masthead-authors sup, .masthead-affil sup, .masthead-note sup { font-size: 0.65em; }
 .masthead-affil { margin: 6px 0 0; font-size: 16px; color: var(--muted); }
 .masthead-note { margin: 4px 0 0; font-size: 13px; color: #6a6f73; }
+.masthead-note a { color: inherit; }
 .masthead-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px 24px; margin-top: 16px; }
 .masthead-meta { margin: 0; font-size: 13px; color: #6a6f73; }
 
