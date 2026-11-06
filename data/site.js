@@ -84,11 +84,24 @@ window.VICTR_SITE = {
 
   // Section 3.2: real retrieval examples (paper Fig. 5). Frames live in
   // assets/retrieval/<id>_<camera>_<signal>.png. `task` is the episode's task
-  // in icl-dataset-full (demoNNN = episode NNN).
+  // pool (demoNNN = episode NNN; picked in scratch/retrieval_picker,
+  // exported by its export_picks.py).
   retrievalExamples: [
     { id: "demo566_frame292",  task: "clean-the-plate" },
     { id: "demo347_frame198",  task: "put-the-circle-on-the-peg" },
     { id: "demo954_frame192",  task: "hit-the-yellow-cube-with-the-mallet" },
     { id: "demo1674_frame245", task: "pass-the-red-chilli-from-the-left-arm-to-the-right-arm" },
+    { id: "demo2272_frame280", task: "pick-up-the-eggplant-and-place-it-on-the-plate" },
+    { id: "demo1941_frame230", task: "place-the-red-chilli-in-the-cup" },
+    { id: "demo199_frame320",  task: "put-the-eggplant-into-the-box" },
+    { id: "demo2926_frame180", task: "uncap-the-blue-marker" },
+    { id: "demo241_frame370",  task: "put-the-square-on-the-peg" },
+    { id: "demo264_frame240",  task: "uncap-the-black-marker" },
+    { id: "demo211_frame180",  task: "put-the-mustard-into-the-box" },
+    { id: "demo67_frame560",   task: "hit-the-eggplant-with-the-mallet" },
+    { id: "demo172_frame600",  task: "pass-the-mustard-to-the-plate" },
+    { id: "demo252_frame650",  task: "stack-the-cubes-and-hit-them-with-the-mallet" },
+    { id: "demo0_frame600",    task: "stack-the-three-cubes-into-a-tower" },
+    { id: "demo90_frame560",   task: "sort-the-items-into-their-containers" },
   ],
 };

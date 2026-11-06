@@ -371,7 +371,7 @@
     const cols = [
       ["original", "Query", "query"],
       ["value", "IC-VFE progress (VICTR)", "value"],
-      ["vision", "DINOv2 similarity (RICL)", ""],
+      ["vision", "DINOv2 similarity (Vision)", ""],
       ["vision_value", "Progress + vision", ""],
     ];
     function render() {
