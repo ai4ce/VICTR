@@ -1,0 +1,34 @@
+{
+  "release_status": "published",
+  "source_code_commit": "b5d18b126406c04ee11a78c9a3e23b89a3729cc0",
+  "models": {
+    "ic_vfe": {
+      "repo_id": "Lewis31231/vfe-gemma270m-dualres-context177",
+      "revision": "664a1924113aa80281b17c0908efd7098e381ee6",
+      "private": false,
+      "filename": "checkpoint_step_10000.pt",
+      "size_bytes": 2853578843,
+      "sha256": "48e8b9b4c11882d8d5d1e0bece4fff4d0b05ca82810c225b5182a02d90794432",
+      "step": 10000
+    },
+    "ic_vfe_no_context": {
+      "repo_id": "Lewis31231/vfe-gemma270m-dualres-3cam-no-context",
+      "revision": "effac5367a45632e24bb7c55172173c55c71cfda",
+      "private": false,
+      "filename": "checkpoint_step_20000.pt",
+      "size_bytes": 2852603822,
+      "sha256": "718acaa5030bb78a60f7a86897409d9d74027edacb5c199d76a720fc266a1c9a",
+      "step": 20000
+    },
+    "recap": {
+      "repo_id": "Lewis31231/vfe-gemma270m-recap-style-3cam-no-context",
+      "revision": "53dee5efd697a7dd9917c1c4b63fab8e77a541f8",
+      "private": false,
+      "filename": "checkpoint_step_20000.pt",
+      "size_bytes": 3386265166,
+      "sha256": "875afe626b16133f6a19a71ff5668038d69c2f4e181f12e487db1b927e42c45d",
+      "step": 20000
+    }
+  },
+  "release_code_commit": "7b7760819c3f7f25530680d05b24899e003d05e5"
+}

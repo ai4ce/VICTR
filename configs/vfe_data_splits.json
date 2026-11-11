@@ -1,0 +1,47 @@
+{
+  "icl_keep_true_all36_query80_ctx20_annotation_progress": {
+    "description": "LeRobot ICL keep-true split using all 36 tasks and all available episodes, with continuous per-frame annotations clamped to [0, 100] and mapped to [-1, 0]. Within every task, floor(80%) of episodes are training queries and the remainder are context; there is no test or held-out task split.",
+    "value_target_semantics": "annotation_progress_clamped_v1",
+    "manifest": "icl_dataset_keep_true_all36_query80_ctx20.json",
+    "preprocess": {
+      "dataset_format": "lerobot_v21",
+      "dataset_root": "data/lerobot/adityx23/icl-dataset-keep-true",
+      "annotation_root": "data/annotations/zs_robodopamine_icl_dataset_continuous",
+      "output_dir": "data/processed/icl_dataset_keep_true_vfe",
+      "seed": 123,
+      "demos_per_task": null,
+      "train_demos_per_task": null,
+      "test_demos_per_task": 0,
+      "num_bins": 201,
+      "value_min": -1,
+      "value_max": 0,
+      "strict_demo_count": false,
+      "paper_reference_path": ""
+    },
+    "train": {
+      "manifest_phase": "train"
+    }
+  },
+  "icl_keep_true_all36_query80_ctx20_per_demo": {
+    "description": "LeRobot ICL keep-true split using all 36 tasks and all available episodes. Within every task, floor(80%) of episodes are training queries and the remainder are context; there is no test or held-out task split.",
+    "value_target_semantics": "per_demo_relative_progress_v1",
+    "manifest": "icl_dataset_keep_true_all36_query80_ctx20.json",
+    "preprocess": {
+      "dataset_format": "lerobot_v21",
+      "dataset_root": "data/lerobot/adityx23/icl-dataset-keep-true",
+      "output_dir": "data/processed/icl_dataset_keep_true_vfe",
+      "seed": 123,
+      "demos_per_task": null,
+      "train_demos_per_task": null,
+      "test_demos_per_task": 0,
+      "num_bins": 201,
+      "value_min": -1,
+      "value_max": 0,
+      "strict_demo_count": false,
+      "paper_reference_path": ""
+    },
+    "train": {
+      "manifest_phase": "train"
+    }
+  }
+}

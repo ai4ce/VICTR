@@ -1,0 +1,131 @@
+{
+  "defaults": {
+    "model": {
+      "backbone": "siglip_gemma",
+      "context_enabled": false,
+      "vision_model_name": "google/siglip-so400m-patch14-384",
+      "context_vision_model_name": "facebook/dinov3-vits16-pretrain-lvd1689m",
+      "native_vision_model_name": "google/gemma-3-4b-pt",
+      "native_vision_model_revision": null,
+      "native_vision_projector_mode": "native_then_vfe",
+      "attention_mode": "causal",
+      "language_model_name": "google/gemma-3-270m",
+      "torch_dtype": "bf16",
+      "freeze_backbone": false,
+      "freeze_native_vision": false,
+      "freeze_vision": true,
+      "freeze_recap_detail_merger": false,
+      "lora": false,
+      "lora_rank": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.05,
+      "lora_target_modules": "q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj",
+      "gradient_checkpointing": true,
+      "obs_key": "observation.images.zed,observation.images.fish0,observation.images.fish1",
+      "proprio_key": "observation.state",
+      "image_size": 0,
+      "query_history_offsets": [
+        0
+      ],
+      "context_obs_key": "observation.images.zed,observation.images.fish0,observation.images.fish1",
+      "context_progress_enabled": false,
+      "context_slot_embedding_enabled": true,
+      "context_image_size": 0,
+      "context_max_original_timesteps": 5295,
+      "context_stride": 30,
+      "context_patch_tokens_per_image": 144,
+      "query_patch_tokens_per_image": 729,
+      "query_vision_projector_mode": "linear",
+      "query_image_preprocess_mode": "hf_cpu",
+      "context_image_chunk_size": 64,
+      "max_language_tokens": 32,
+      "loss_type": "hard_ce",
+      "soft_label_sigma": 0.01,
+      "huber_beta": 0.02,
+      "huber_weight": 1,
+      "adapter_init_std": 0.02,
+      "adapter_token_scale": 1,
+      "adapter_output_norm": "layernorm",
+      "match_adapter_token_rms": true,
+      "use_source_embeddings": true,
+      "log_input_embedding_stats": false,
+      "hidden_dim": 256,
+      "transformer_layers": 2,
+      "transformer_heads": 4,
+      "dropout": 0.1,
+      "vocab_size": 8192
+    },
+    "context_features": {
+      "enabled": false,
+      "output_dir": null,
+      "phases": [],
+      "stage": "native_projector_input",
+      "model_name": null,
+      "model_revision": null,
+      "tokens_per_image": 256,
+      "model_dtype": "bf16",
+      "feature_dtype": "bf16",
+      "image_batch_size": 64,
+      "device": "cuda",
+      "overwrite": false
+    }
+  },
+  "presets": {
+    "gemma3_270m_native_dualres_context177_stride30_3cam_freeze_vision": {
+      "description": "Three-camera dual-resolution Gemma 3 270M for the ICL keep-true dataset, with frozen Gemma 3 native vision, a trainable 256-token detail connector, a shared 16-token context merger, block-causal context attention, and 177 stride-30 context slots covering up to 5,295 source frames.",
+      "model": {
+        "backbone": "gemma3_native_style_270m_context",
+        "native_vision_projector_mode": "dualres_two_stage_merger",
+        "attention_mode": "independent_sliding_block_causal_full",
+        "context_enabled": true,
+        "context_patch_tokens_per_image": 256,
+        "context_image_chunk_size": 4
+      },
+      "context_features": {
+        "enabled": true,
+        "output_dir": "data/features/gemma3_4b_icl_keep_true_3cam_stride30_pooled_raw_bf16",
+        "phases": [
+          "train"
+        ],
+        "stage": "native_vision_pooled"
+      }
+    },
+    "gemma3_270m_native_dualres_no_context_3cam_freeze_vision": {
+      "description": "Three-camera no-context ablation paired with the ICL keep-true context177 preset: frozen Gemma 3 native vision, a trainable 256-token detail connector, a shared two-stage 16-token merger, and Gemma 3 270M without context concatenation.",
+      "model": {
+        "backbone": "gemma3_native_style_270m_context",
+        "native_vision_projector_mode": "dualres_two_stage_merger",
+        "context_patch_tokens_per_image": 256,
+        "context_image_chunk_size": 4
+      }
+    },
+    "gemma3_270m_native_dualres_context177_stride30_3cam_freeze_vision_no_block_embedding": {
+      "description": "Single-factor model ablation of the main IC-VFE: disable learned context-slot (block-index) embeddings only. Context progress remains disabled; sampling, attention, vision, and all other settings match the main model. Pending training.",
+      "model": {
+        "backbone": "gemma3_native_style_270m_context",
+        "native_vision_projector_mode": "dualres_two_stage_merger",
+        "attention_mode": "independent_sliding_block_causal_full",
+        "context_enabled": true,
+        "context_patch_tokens_per_image": 256,
+        "context_image_chunk_size": 4,
+        "context_slot_embedding_enabled": false
+      },
+      "context_features": {
+        "enabled": true,
+        "output_dir": "data/features/gemma3_4b_icl_keep_true_3cam_stride30_pooled_raw_bf16",
+        "phases": [
+          "train"
+        ],
+        "stage": "native_vision_pooled"
+      }
+    },
+    "recap_style_icl_3cam": {
+      "description": "Original three-camera ICL keep-true adaptation of the no-context RECAP-style SigLIP-So400M patch14-384 and Gemma 3 270M model, with 729 visual tokens per camera and gradient checkpointing for global batch 160 on two H200s.",
+      "model": {
+        "adapter_output_norm": "none",
+        "match_adapter_token_rms": false,
+        "use_source_embeddings": false
+      }
+    }
+  }
+}
