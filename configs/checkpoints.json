@@ -4,7 +4,7 @@
   "models": {
     "ic_vfe": {
       "repo_id": "Lewis31231/vfe-gemma270m-dualres-context177",
-      "revision": "664a1924113aa80281b17c0908efd7098e381ee6",
+      "revision": "b144958f717881a3e96eeb813dc1da6dc4319e7c",
       "private": false,
       "filename": "checkpoint_step_10000.pt",
       "size_bytes": 2853578843,
@@ -13,7 +13,7 @@
     },
     "ic_vfe_no_context": {
       "repo_id": "Lewis31231/vfe-gemma270m-dualres-3cam-no-context",
-      "revision": "effac5367a45632e24bb7c55172173c55c71cfda",
+      "revision": "cdc3dedb3b2f8fd53f372f44ebfcdcb71107924e",
       "private": false,
       "filename": "checkpoint_step_20000.pt",
       "size_bytes": 2852603822,
@@ -22,7 +22,7 @@
     },
     "recap": {
       "repo_id": "Lewis31231/vfe-gemma270m-recap-style-3cam-no-context",
-      "revision": "53dee5efd697a7dd9917c1c4b63fab8e77a541f8",
+      "revision": "734296f47c5c1c558e0673e0d2248bef2446a36e",
       "private": false,
       "filename": "checkpoint_step_20000.pt",
       "size_bytes": 3386265166,
@@ -30,5 +30,6 @@
       "step": 20000
     }
   },
-  "release_code_commit": "7b7760819c3f7f25530680d05b24899e003d05e5"
+  "release_code_commit": "d9a4291faf1d7d004902f04e05cfa2fa1b0ddbb1",
+  "release_code_repository": "https://github.com/ai4ce/VICTR"
 }
