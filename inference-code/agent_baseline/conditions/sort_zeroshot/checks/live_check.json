@@ -1,0 +1,71 @@
+{
+  "started_at": "2026-10-13T18:55:04.801276+00:00",
+  "mode": "read-only state SUB and commlink pull subscriber; no executor",
+  "state_endpoint": "tcp://192.168.123.55:5568",
+  "camera_endpoint": "tcp://192.168.123.117:5550",
+  "socket_types": [
+    "SUB",
+    "DEALER (camera reads only)"
+  ],
+  "connections": [
+    "tcp://192.168.123.55:5568",
+    "tcp://192.168.123.117:5550"
+  ],
+  "forbidden_operations": [],
+  "bind_calls": 0,
+  "publisher_sockets_created": 0,
+  "commands_published": 0,
+  "gate_changes_requested": 0,
+  "camera_read_requests": 2,
+  "state_packets": 3,
+  "camera_packets": 2,
+  "gate_values": [
+    false
+  ],
+  "cameras": {
+    "zed": {
+      "readable": true,
+      "width": 1280,
+      "height": 720,
+      "mode": "RGB",
+      "encoded_bytes": 69507
+    },
+    "fish0": {
+      "readable": true,
+      "width": 640,
+      "height": 480,
+      "mode": "RGB",
+      "encoded_bytes": 29356
+    },
+    "fish1": {
+      "readable": true,
+      "width": 640,
+      "height": 480,
+      "mode": "RGB",
+      "encoded_bytes": 27487
+    }
+  },
+  "errors": [],
+  "port_5572_before": {
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "",
+    "checked_at": 1791917704.8193564,
+    "inspection_ok": true,
+    "free": true
+  },
+  "last_cameras_received_s": 0.18578323899419047,
+  "last_state_received_s": 0.15235315600875765,
+  "port_5572_after": {
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "",
+    "checked_at": 1791917705.004931,
+    "inspection_ok": true,
+    "free": true
+  },
+  "duration_s": 0.20364812898333184,
+  "state_readable": true,
+  "gate_readable": true,
+  "passed": true
+}

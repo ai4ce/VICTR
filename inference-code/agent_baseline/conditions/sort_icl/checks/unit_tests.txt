@@ -1,0 +1,40 @@
+Executor publishing at 30 Hz; holding measured pose until an agent chunk arrives.
+Executor publishing at 30 Hz; holding measured pose until an agent chunk arrives.
+Executor publishing at 30 Hz; holding measured pose until an agent chunk arrives.
+Executor publishing at 30 Hz; holding measured pose until an agent chunk arrives.
+test_arm_switch_both_choices_and_duplicate_does_not_preempt (test_executor.CoreTests.test_arm_switch_both_choices_and_duplicate_does_not_preempt) ... ok
+test_deadline_3600 (test_executor.CoreTests.test_deadline_3600) ... ok
+test_demo_reference_validation (test_executor.CoreTests.test_demo_reference_validation) ... ok
+test_hold_does_not_follow_sag (test_executor.CoreTests.test_hold_does_not_follow_sag) ... ok
+test_idle_drift_uses_original_anchor_for_either_choice (test_executor.CoreTests.test_idle_drift_uses_original_anchor_for_either_choice) ... ok
+test_immediate_stops (test_executor.CoreTests.test_immediate_stops) ... ok
+test_local_freshness_repeats_and_stop_limits (test_executor.CoreTests.test_local_freshness_repeats_and_stop_limits) ... ok
+test_per_task_usage_preserves_unknown_actuals (test_executor.CoreTests.test_per_task_usage_preserves_unknown_actuals) ... ok
+test_persistent_chunk_reaches_command_goal_with_sag (test_executor.CoreTests.test_persistent_chunk_reaches_command_goal_with_sag) ... ok
+test_preemption_full_logging_and_gripper_hold (test_executor.CoreTests.test_preemption_full_logging_and_gripper_hold) ... ok
+test_rejected_first_chunk_does_not_lock (test_executor.CoreTests.test_rejected_first_chunk_does_not_lock) ... ok
+test_required_metadata_and_arm_selection (test_executor.CoreTests.test_required_metadata_and_arm_selection) ... ok
+test_stale_interrupt_does_not_resume_old_chunk (test_executor.CoreTests.test_stale_interrupt_does_not_resume_old_chunk) ... ok
+test_submit_counts_demo_text_and_requires_it_each_time (test_executor.CoreTests.test_submit_counts_demo_text_and_requires_it_each_time) ... ok
+test_switch_reanchors_at_acceptance_and_keeps_gripper (test_executor.CoreTests.test_switch_reanchors_at_acceptance_and_keeps_gripper) ... ok
+test_switch_request_uses_current_state_and_rejects_idle_gripper_change (test_executor.CoreTests.test_switch_request_uses_current_state_and_rejects_idle_gripper_change) ... ok
+test_unselected_summary_and_start_pose_hold (test_executor.CoreTests.test_unselected_summary_and_start_pose_hold) ... ok
+test_usage_estimate_is_labelled_and_actual_separate (test_executor.CoreTests.test_usage_estimate_is_labelled_and_actual_separate) ... ok
+test_validate_full_chunk_and_reject_bad_inputs (test_executor.CoreTests.test_validate_full_chunk_and_reject_bad_inputs) ... ok
+test_two_commit_freeze_and_integrity_rejections (test_executor.FreezeTests.test_two_commit_freeze_and_integrity_rejections) ... abort: offline stream sentinel
+abort: executor repo is not clean
+abort: executor repo is not clean
+abort: FROZEN commit or prompt hash mismatch
+abort: FROZEN commit or prompt hash mismatch
+abort: FROZEN commit or prompt hash mismatch
+ok
+test_files_inbox_preemption_snapshots_and_exact_wire (test_executor.Integration.test_files_inbox_preemption_snapshots_and_exact_wire) ... ok
+test_stale_camera_hold_recovery_and_stop (test_executor.Integration.test_stale_camera_hold_recovery_and_stop) ... abort: stream receipt age >2s
+ok
+test_stale_state_hold_recovery_and_stop (test_executor.Integration.test_stale_state_hold_recovery_and_stop) ... abort: stream receipt age >2s
+ok
+
+----------------------------------------------------------------------
+Ran 23 tests in 6.022s
+
+OK

@@ -1,0 +1,58 @@
+[
+  {
+    "file": "client.py",
+    "baseline_sha256": "cb5c9a08e56ce3fc23543b5d8dc87cfabb68688db86d1269e38ac95ed5a409cd",
+    "current_sha256": "b44968856bc8e58850376e98602c05b769b69fff06d4d77dd452690fd64b68c0",
+    "added": 20,
+    "removed": 10
+  },
+  {
+    "file": "core.py",
+    "baseline_sha256": "d3d9aae015ad17dbac9f54d2ee4911b2850fd1806f5b548d221e0d7a3e842330",
+    "current_sha256": "c26d3e2a49f1199b99e86caa10bb9f7d3893738b4a025c31e506f5d95429b4ac",
+    "added": 36,
+    "removed": 8
+  },
+  {
+    "file": "files.py",
+    "baseline_sha256": "897ac8351ffa1abc85ab7d5320718f22a031ee9f33cd164839100659e3d5b393",
+    "current_sha256": "897ac8351ffa1abc85ab7d5320718f22a031ee9f33cd164839100659e3d5b393",
+    "added": 0,
+    "removed": 0
+  },
+  {
+    "file": "run_executor.py",
+    "baseline_sha256": "63e75df38f1055fa51665b85df0cd5c222d861d2bfbeed81befca7f243cf4e08",
+    "current_sha256": "9ba828516bdcbea9d521934f0454a72803152904b9811679bf9756b5cde3c86a",
+    "added": 15,
+    "removed": 9
+  },
+  {
+    "file": "safety.py",
+    "baseline_sha256": "5bdbed2077ae62100e315ad584953a426471756ec2ebb3048ad1463ffb89c427",
+    "current_sha256": "d58d3ceceb53779f0115200abe3b93f1f8dda77449f47d03364688f9b5e0d3b3",
+    "added": 4,
+    "removed": 2
+  },
+  {
+    "file": "streams.py",
+    "baseline_sha256": "5b30cdfe41be455b1b482c2782cb51e988fea046eb0aa584c8e88874b7f6e4bb",
+    "current_sha256": "5b30cdfe41be455b1b482c2782cb51e988fea046eb0aa584c8e88874b7f6e4bb",
+    "added": 0,
+    "removed": 0
+  },
+  {
+    "file": "summarize_usage.py",
+    "baseline_sha256": "dbe2096be099bca8239ba9f9b345a8d7f2b69985f73590ae9e7a20478c26d9af",
+    "current_sha256": "dbe2096be099bca8239ba9f9b345a8d7f2b69985f73590ae9e7a20478c26d9af",
+    "added": 0,
+    "removed": 0
+  },
+  {
+    "file": "test_executor.py",
+    "baseline_sha256": "a262d6aabe8043fb4a0c69480dc213c893d51fa0d69876f3b2b6132928c6fcc3",
+    "current_sha256": "a923432d8bb6b5ea36cf448a246c35918fa8e69e09b5f1fc2fe15a4a226d4632",
+    "added": 161,
+    "removed": 27
+  }
+]

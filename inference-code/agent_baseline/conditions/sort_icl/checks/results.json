@@ -1,0 +1,45 @@
+{
+  "returncode": 0,
+  "duration_s": 6.221824929001741,
+  "command": [
+    "openpi/.venv/bin/python",
+    "-B",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "/home/lairlab/icl_ws/agent_runs/astra/sort_the_items_into_their_containers/executor",
+    "-p",
+    "test_executor.py",
+    "-v"
+  ],
+  "offline_publishing_disabled": true,
+  "live_check": {
+    "timestamp": 1791910612.0784414,
+    "no_bind": true,
+    "no_publish": true,
+    "passed": true,
+    "port_5572_free_before": true,
+    "gate_readable": true,
+    "gate_enabled": false,
+    "state_readable": true,
+    "state_age_s": 1.3584998669102788e-05,
+    "camera_age_s": 0.03212581799016334,
+    "camera_sizes": {
+      "zed": [
+        1280,
+        720
+      ],
+      "fish0": [
+        640,
+        480
+      ],
+      "fish1": [
+        640,
+        480
+      ]
+    },
+    "port_5572_free_after": true
+  },
+  "review_state": "awaiting operator approval; no ROOT commits or FROZEN"
+}

@@ -1,0 +1,936 @@
+diff --git a/src/openpi/models/model.py b/src/openpi/models/model.py
+index 29618b4..a9b77cd 100644
+--- a/src/openpi/models/model.py
++++ b/src/openpi/models/model.py
+@@ -106,6 +106,27 @@ class Observation(Generic[ArrayT]):
+     # Token loss mask (for FAST autoregressive model).
+     token_loss_mask: at.Bool[ArrayT, "*b l"] | None = None
+ 
++    # VICTR context-chunk fields (openpi.models.pi0_fast_victr.Pi0FastVictr /
++    # openpi.policies.yor_retrieval.RetrievalContextInputs). k = num_context_chunks,
++    # f = context_frames_per_chunk, l = context_text_max_length. None (the default)
++    # means "no retrieval context" -- Pi0FastVictr.embed_inputs_with_context falls back
++    # to plain query-only embedding in that case, so these stay optional here rather
++    # than required, to not break any non-VICTR model that constructs an Observation.
++    context_images: at.Float[ArrayT, "*b k f h w c"] | None = None
++    context_image_masks: at.Bool[ArrayT, "*b k f"] | None = None
++    # "cl" (context length), not "l" -- context_text_max_length is independently sized
++    # from tokenized_prompt's max_token_len ("l" above); reusing "l" here made jaxtyping
++    # wrongly require them to match (confirmed 2026-08-28: a real l=256 vs cl=64 call
++    # failed typecheck until this was split out).
++    context_tokens: at.Int[ArrayT, "*b k cl"] | None = None
++    context_tokens_mask: at.Bool[ArrayT, "*b k cl"] | None = None
++    # RICL-pi0.5 continuous action interpolation (LucaMacesanu/openpi main, 8083a2c; Pi0Victr with
++    # use_action_interpolation). exp(-lamda * normalized top-1 vision distance), one scalar per
++    # example, and the top-1 retrieved chunk's native action window, quantile-normalized and padded
++    # to (action_horizon, action_dim) like `actions`. None everywhere else.
++    exp_lamda_distance: at.Float[ArrayT, "*b"] | None = None
++    nearest_action: at.Float[ArrayT, "*b ah ad"] | None = None
++
+     @classmethod
+     def from_dict(cls, data: at.PyTree[ArrayT]) -> "Observation[ArrayT]":
+         """This method defines the mapping between unstructured data (i.e., nested dict) to the structured Observation format."""
+@@ -126,6 +147,12 @@ class Observation(Generic[ArrayT]):
+             tokenized_prompt_mask=data.get("tokenized_prompt_mask"),
+             token_ar_mask=data.get("token_ar_mask"),
+             token_loss_mask=data.get("token_loss_mask"),
++            context_images=data.get("context_images"),
++            context_image_masks=data.get("context_image_masks"),
++            context_tokens=data.get("context_tokens"),
++            context_tokens_mask=data.get("context_tokens_mask"),
++            exp_lamda_distance=data.get("exp_lamda_distance"),
++            nearest_action=data.get("nearest_action"),
+         )
+ 
+     def to_dict(self) -> at.PyTree[ArrayT]:
+@@ -205,6 +232,16 @@ def preprocess_observation(
+         tokenized_prompt_mask=observation.tokenized_prompt_mask,
+         token_ar_mask=observation.token_ar_mask,
+         token_loss_mask=observation.token_loss_mask,
++        # Passed through unmodified, as in the training fork (LucaMacesanu/openpi@086a9869):
++        # retrieved context frames are historical reference frames, not the live
++        # observation, so the resize/augmentation above does not apply to them. Dropping
++        # these made every VICTR model silently take its query-only path at inference.
++        context_images=observation.context_images,
++        context_image_masks=observation.context_image_masks,
++        context_tokens=observation.context_tokens,
++        context_tokens_mask=observation.context_tokens_mask,
++        exp_lamda_distance=observation.exp_lamda_distance,
++        nearest_action=observation.nearest_action,
+     )
+ 
+ 
+diff --git a/src/openpi/training/config.py b/src/openpi/training/config.py
+index 4ca47e1..772e498 100644
+--- a/src/openpi/training/config.py
++++ b/src/openpi/training/config.py
+@@ -16,10 +16,14 @@ import tyro
+ import openpi.models.model as _model
+ import openpi.models.pi0_config as pi0_config
+ import openpi.models.pi0_fast as pi0_fast
++import openpi.models.pi0_fast_victr as pi0_fast_victr
++import openpi.models.pi0_victr as pi0_victr
+ import openpi.models.tokenizer as _tokenizer
+ import openpi.policies.aloha_policy as aloha_policy
+ import openpi.policies.droid_policy as droid_policy
+ import openpi.policies.libero_policy as libero_policy
++import openpi.policies.yor_policy as yor_policy
++import openpi.policies.yor_retrieval as yor_retrieval
+ import openpi.shared.download as _download
+ import openpi.shared.normalize as _normalize
+ import openpi.training.droid_rlds_dataset as droid_rlds_dataset
+@@ -278,6 +282,266 @@ class LeRobotAlohaDataConfig(DataConfigFactory):
+         )
+ 
+ 
++@dataclasses.dataclass(frozen=True)
++class YorDataConfig(DataConfigFactory):
++    """Data config for the YOR bimanual pi0.5 checkpoint (inference only -- no LeRobot dataset attached).
++
++    Two checkpoint families exist (see yor_policy.YorInputs docstring for full confirmation sources):
++      state_dim=14 (default): [left_joints(7), right_joints(7)], actions=16
++        ([left_ee(7), right_ee(7), gripper(2)]); confirmed empirically against the actual checkpoint's
++        Orbax param shapes (Pi0Config(pi05=True, action_dim=32) loads with no shape errors -- the real
++        16-dim action is zero-padded to 32 by the shared model transform) and against
++        joystick_policy_teleop.py's curr_pose field layout on the Pi.
++      state_dim=15 (the lair-nyu yor_icl_* checkpoints, 2026-08-14): + lift(1); actions=20
++        (+ base_vel(3) + lift_cmd(1)); confirmed against the sibling lerobot checkpoint's config.json
++        and stats.json (same dimension-for-dimension mean/std ranges as these checkpoints' own
++        norm_stats.json) and against collect.py's original data-collection column order.
++    These checkpoints also use a different `assets` asset_id ("icl-dataset" vs. the older
++    checkpoints' "train") -- set via AssetsConfig(asset_id=...) on each TrainConfig entry below, not
++    by this class.
++    """
++
++    default_prompt: str | None = None
++    state_dim: int = 14
++
++    @override
++    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
++        data_transforms = _transforms.Group(
++            inputs=[yor_policy.YorInputs(state_dim=self.state_dim)],
++            outputs=[yor_policy.YorOutputs()],
++        )
++        model_transforms = ModelTransformFactory(default_prompt=self.default_prompt)(model_config)
++
++        return dataclasses.replace(
++            self.create_base_config(assets_dirs, model_config),
++            data_transforms=data_transforms,
++            model_transforms=model_transforms,
++        )
++
++
++@dataclasses.dataclass(frozen=True)
++class YorDeltaRot6dDataConfig(YorDataConfig):
++    """YorDataConfig, but for pi05_extended_deltarot6d_full-family checkpoints: same 15D
++    joint-state MODEL INPUT as YorDataConfig (this action-representation change is
++    output-side only -- the model still takes the same joint state it always did), but uses
++    YorDeltaRot6dOutputs instead of YorOutputs, since this checkpoint's real 20-dim output is
++    PER-ARM [delta_xyz(3), rot6d(6), gripper(1)] x 2, not the absolute
++    [left_ee(7), right_ee(7), gripper(2)] layout YorOutputs assumes. See
++    yor_policy.YorDeltaRot6dOutputs's docstring for the data confirming this."""
++
++    @override
++    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
++        data_transforms = _transforms.Group(
++            inputs=[yor_policy.YorInputs(state_dim=self.state_dim)],
++            outputs=[yor_policy.YorDeltaRot6dOutputs()],
++        )
++        model_transforms = ModelTransformFactory(default_prompt=self.default_prompt)(model_config)
++
++        return dataclasses.replace(
++            self.create_base_config(assets_dirs, model_config),
++            data_transforms=data_transforms,
++            model_transforms=model_transforms,
++        )
++
++
++@dataclasses.dataclass(frozen=True)
++class YorAbsoluteJointDataConfig(YorDataConfig):
++    """YorDataConfig, but for yor_icl_pi05_easy_pnp_v2_absolute_joint_sanity15k: same 15D
++    joint-state MODEL INPUT as YorDataConfig, but uses YorAbsoluteJointOutputs instead of
++    YorOutputs, since this checkpoint's real 15-dim output is absolute joint angles
++    (left_joints(7) + right_joints(7) + lift(1)) -- the same layout as observation.state
++    itself, not the [left_ee(7), right_ee(7), gripper(2)] EE-pose layout YorOutputs assumes.
++    See yor_policy.YorAbsoluteJointOutputs's docstring for the data confirming this."""
++
++    @override
++    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
++        data_transforms = _transforms.Group(
++            inputs=[yor_policy.YorInputs(state_dim=self.state_dim)],
++            outputs=[yor_policy.YorAbsoluteJointOutputs()],
++        )
++        model_transforms = ModelTransformFactory(default_prompt=self.default_prompt)(model_config)
++
++        return dataclasses.replace(
++            self.create_base_config(assets_dirs, model_config),
++            data_transforms=data_transforms,
++            model_transforms=model_transforms,
++        )
++
++
++@dataclasses.dataclass(frozen=True)
++class YorAlignedJointDataConfig(YorDataConfig):
++    """YorDataConfig, but for yor_icl_pi05_aligned_q_sanity15k: same 15D joint-state MODEL INPUT
++    as YorDataConfig, but uses YorAlignedJointOutputs instead of YorOutputs/YorAbsoluteJoint
++    Outputs, since this checkpoint's real 14-dim output is absolute joint angles (left_joints(7)
++    + right_joints(7), no lift) trained on a genuine recorded action.q_target column rather than
++    a pseudo-action. See yor_policy.YorAlignedJointOutputs's docstring for the data confirming
++    this."""
++
++    @override
++    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
++        data_transforms = _transforms.Group(
++            inputs=[yor_policy.YorInputs(state_dim=self.state_dim)],
++            outputs=[yor_policy.YorAlignedJointOutputs()],
++        )
++        model_transforms = ModelTransformFactory(default_prompt=self.default_prompt)(model_config)
++
++        return dataclasses.replace(
++            self.create_base_config(assets_dirs, model_config),
++            data_transforms=data_transforms,
++            model_transforms=model_transforms,
++        )
++
++
++@dataclasses.dataclass(frozen=True)
++class YorVictrDataConfig(YorDataConfig):
++    """Serving-only VICTR inputs: live retrieval after the local YOR camera adapter.
++
++    The demo pool contains held-out episodes; context encoding and fixed fusion
++    follow LucaMacesanu/openpi@086a9869. No precomputed training-row lookup.
++    """
++
++    # Search path (os.pathsep-separated): demo-dataset pools, then in-domain icl-dataset pools built
++    # from training's own pool split (build_indomain_pool.py). A task may exist in only one.
++    pool_dir: str = "/home/lairlab/icl_ws/assets/victr_icl_pool_demo:/home/lairlab/icl_ws/assets/victr_icl_pool_indomain"
++    num_context_chunks: int = 1
++    context_frames_per_chunk: int = 1
++    context_text_max_length: int = 64
++    fusion_lambda: float = 1.0
++    retrieval_metric: str | None = None
++    # ("zed",) is the retrieval the checkpoints were trained with; adding "fish0"/"fish1"
++    # needs a pool built with build_victr_pool.py --add-wrist-cameras.
++    retrieval_key_cameras: tuple[str, ...] = ("zed",)
++    # "retrieved", "random" (a random same-task chunk, EXP B3) or "none" (no context, EXP B1).
++    context_mode: str = "retrieved"
++    # Keep only each task pool's N shortest keep=true demonstrations (experiments.py EXP E); None: all.
++    pool_demos: int | None = None
++    prompt_to_task_overrides: dict[str, str] = dataclasses.field(default_factory=dict)
++    # "auto": each pool's declared key preprocessing -- raw for the in-domain pools (as training),
++    # letterbox for the demo pools, which do not declare it.
++    query_image_mode: str = "auto"
++    missing_pool: str = "error"
++    robometer_python: str | None = None
++    robometer_device: str = "cuda"
++    # "robometer", "robometer_ft", "vfe" or "vfe_recap" (yor_retrieval.RetrievalContextInputs.value_estimator).
++    value_estimator: str = "robometer"
++    vfe_python: str | None = None
++    vfe_device: str = "cuda"
++
++    def context_encoding_kwargs(self) -> dict:
++        return {}
++
++    def output_transform(self) -> _transforms.DataTransformFn:
++        return yor_policy.YorOutputs()
++
++    @override
++    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
++        data_transforms = _transforms.Group(
++            inputs=[
++                yor_policy.YorInputs(state_dim=self.state_dim, retrieval_metadata=True),
++                yor_retrieval.RetrievalContextInputs(
++                    pool_dir=self.pool_dir,
++                    num_context_chunks=self.num_context_chunks,
++                    context_frames_per_chunk=self.context_frames_per_chunk,
++                    context_text_max_length=self.context_text_max_length,
++                    retrieval_metric=self.retrieval_metric or getattr(model_config, "retrieval_metric", "vision"),
++                    retrieval_key_cameras=self.retrieval_key_cameras,
++                    context_mode=self.context_mode,
++                    pool_demos=self.pool_demos,
++                    fusion_lambda=self.fusion_lambda,
++                    prompt_to_task_overrides=self.prompt_to_task_overrides,
++                    query_image_mode=self.query_image_mode,
++                    missing_pool=self.missing_pool,
++                    robometer_python=self.robometer_python,
++                    robometer_device=self.robometer_device,
++                    value_estimator=self.value_estimator,
++                    vfe_python=self.vfe_python,
++                    vfe_device=self.vfe_device,
++                    **self.context_encoding_kwargs(),
++                ),
++            ],
++            outputs=[self.output_transform()],
++        )
++        model_transforms = ModelTransformFactory(default_prompt=self.default_prompt)(model_config)
++
++        return dataclasses.replace(
++            self.create_base_config(assets_dirs, model_config),
++            data_transforms=data_transforms,
++            model_transforms=model_transforms,
++        )
++
++
++@dataclasses.dataclass(frozen=True)
++class YorCanonicalCtx3camDataConfig(YorVictrDataConfig):
++    """Serving config for yor_icl_victr_{vision,value}_canonical_ctx3cam (LucaMacesanu/openpi@5ea2659):
++    the ICRA canonical space of yor_icl_pi05_canonical_extended -- 18-D [pos(3), rot6d(6)] x 2 state
++    in (built by the caller, e.g. inference_server_openpi.build_rot6d_state), raw 20-D
++    [delta_pos(3), rot6d(6), gripper(1)] x 2 out (YorDeltaRot6dOutputs) -- plus the redesigned
++    context: one frame per camera per retrieved chunk and a 256-token FASTTokenizer span of task,
++    canonical state and truncated 30-step canonical actions (yor_retrieval.build_chunk_context_tokens).
++    The pool needs build_canonical_context.py sidecars. Training's prompt renames are mapped back
++    to pool tasks, as training did (prompt_to_task_overrides = inverse of its task_prompt_overrides)."""
++
++    state_dim: int = 18
++    num_context_chunks: int = 1
++    context_frames_per_chunk: int = 3
++    context_text_max_length: int = 256
++    context_camera_keys: tuple[str, ...] = (
++        "observation.images.zed", "observation.images.fish0", "observation.images.fish1",
++    )
++    context_fast_tokenizer_path: str = "/home/lairlab/icl_ws/checkpoints/yor-icl-canonical-fast-tokenizer"
++    # The checkpoint's own norm stats, which its Normalize transform also uses (identical across
++    # both ctx3cam checkpoints and yor_icl_pi05_canonical_extended step 40000).
++    # 2026-09-15: re-pointed from the step-5000 checkpoint, deleted under disk pressure, to the
++    # step-10000 one still on disk. The file is byte-identical (md5 3f7d9aae83) in every ctx3cam
++    # checkpoint, so this is the same normalization, not a substitute.
++    context_norm_stats_path: str = (
++        "/home/lairlab/icl_ws/checkpoints/yor_icl_victr_vision_canonical_ctx3cam-step10000/assets/icl-dataset/norm_stats.json"
++    )
++    prompt_to_task_overrides: dict[str, str] = dataclasses.field(
++        default_factory=lambda: {v: k for k, v in YOR_CANONICAL_TASK_PROMPT_OVERRIDES.items()}
++    )
++
++    # RICL-pi0.5 continuous action interpolation (yor_icl_victr_vision_interp_canonical_ctx3cam_serve).
++    use_continuous_action_interpolation: bool = False
++    lamda: float = 10.0
++
++    def context_encoding_kwargs(self) -> dict:
++        return {
++            "context_camera_keys": self.context_camera_keys,
++            "context_fast_tokenizer_path": self.context_fast_tokenizer_path,
++            "context_norm_stats_path": self.context_norm_stats_path,
++            "use_continuous_action_interpolation": self.use_continuous_action_interpolation,
++            "lamda": self.lamda,
++        }
++
++    def output_transform(self) -> _transforms.DataTransformFn:
++        return yor_policy.YorDeltaRot6dOutputs()
++
++
++# Training's dataset task -> prompt renames for the canonical task set
++# (LucaMacesanu/openpi@5ea2659 config.YOR_EXPANDED_TASK_PROMPT_OVERRIDES, used by the ctx3cam arms).
++YOR_CANONICAL_TASK_PROMPT_OVERRIDES: dict[str, str] = {
++    "pick up the orange cube and place it on the plate with the left arm on a cluttered table": (
++        "pick up the orange cube and place it in the box with the left arm"
++    ),
++    "pick up the orange cube and place it on the plate with the left arm on an uncluttered table": (
++        "pick up the orange cube and place it on the plate with the left arm"
++    ),
++    "pick up the orange cube and place it on the plate with the right arm on a cluttered table": (
++        "pick up the orange cube and place it in the box with the right arm"
++    ),
++    "pick up the orange cube and place it on the plate with the right arm on an uncluttered table": (
++        "pick up the orange cube and place it on the plate with the right arm"
++    ),
++    "hit the yellow cube with the mallet using the left arm": "hit the yellow cube using the mallet with the left arm",
++    "hit the yellow cube with the mallet using the right arm": "hit the yellow cube using the mallet with the right arm",
++    "clean the plate": "Grab the plate and the rag, and use the rag to wipe the plate.",
++    "sort the items into their containers": (
++        "Place the markers in the cup, the cubes in the box, and the food items on the plate."
++    ),
++}
++
++
+ @dataclasses.dataclass(frozen=True)
+ class LeRobotLiberoDataConfig(DataConfigFactory):
+     """
+@@ -968,8 +1232,573 @@ _CONFIGS = [
+     # RoboArena & PolaRiS configs.
+     *roboarena_config.get_roboarena_configs(),
+     *polaris_config.get_polaris_configs(),
++    #
++    # YOR bimanual pi0.5 inference config.
++    #
++    TrainConfig(
++        # For running inference on icl-pi05-openpi-step24999 (and similarly-shaped YOR bimanual
++        # checkpoints). action_horizon=10 confirmed from the actual training repo
++        # (notes/openpi_icl_full_pipeline_commands.md: "The action horizon is 10.").
++        #
++        # IMPORTANT: actions are end-effector pose (left_ee(7) + right_ee(7) + gripper(2)), NOT
++        # joint angles -- confirmed from vfe_training_ref's build_lerobot_canonical_v21.py /
++        # notes/lerobot_pnp_canonical_training.md ("action: 16-D, concatenating action.left_ee +
++        # action.right_ee + action.gripper"). There is no IK step in this codebase to convert EE
++        # pose to the joint-space commands the Pi's listener expects -- do not wire this up to
++        # publish to the robot without adding one first.
++        name="yor_bimanual_pi05",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDataConfig(
++            assets=AssetsConfig(asset_id="train"),
++        ),
++    ),
++    TrainConfig(
++        # Same architecture/data layout as yor_bimanual_pi05 (state=14, action=16, EE-space --
++        # see that entry's comment) but action_horizon=30 instead of 10. Empirically confirmed
++        # 2026-08-10 against Lewis31231/eggplant-left-arm-success-pi05-h30-2gpu-bs256-30epoch:
++        # loads cleanly with action_horizon=30 and produces a (30, 16) action chunk; the sibling
++        # checkpoint Lewis31231/eggplant-left-arm-success-pi05-all-2gpu-bs256-30epoch-1 (no
++        # "h" suffix) uses the existing yor_bimanual_pi05 config (horizon=10) instead.
++        name="yor_bimanual_pi05_h30",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=30),
++        data=YorDataConfig(
++            assets=AssetsConfig(asset_id="train"),
++        ),
++    ),
++    # -- lair-nyu/yor_icl_* checkpoints (2026-08-14) --
++    # 6 checkpoints, all publicly hosted at huggingface.co/lair-nyu/<repo>, deploy-only exports
++    # (params/ + assets/, no train_state/). Each README names its own "openpi TrainConfig" --
++    # registered here under those exact names since --config does a literal name lookup. All 6
++    # share identical model architecture (verified 2026-08-14: compared full Orbax param key sets
++    # and shapes pairwise across all 6, zero differences anywhere, including the KI/subtask and RTC
++    # variants) and the same state_dim=15/action asset_id="icl-dataset" data layout (see
++    # YorDataConfig docstring) -- "Knowledge Insulation", "subtask prediction", and "RABC" are
++    # training-time-only techniques (different losses/data weighting) that don't change the
++    # deployed model's shape; "RTC" (real-time chunking) is a serving-side execution technique
++    # (blending overlapping predicted chunks) that this codebase doesn't implement for openpi
++    # (a Pi0Rtc/Pi0RtcConfig model class once existed here but was removed 2026-08-28 after
++    # real, repeated safety incidents during live testing -- see this project's history). The
++    # dead "yor_icl_pi05_rtc" registration this comment used to reference (a plain Pi0Config
++    # with no checkpoint and no actual RTC behavior) was removed 2026-09-06; any of the 6
++    # checkpoints below run fine under our existing receding-horizon --replan-steps approach
++    # regardless, just without RTC's intended extra smoothing.
++    # action_horizon=10 is an ASSUMPTION (none of the 6 READMEs state a chunk_size/action_horizon,
++    # and openpi checkpoints don't expose it in metadata the way the lerobot checkpoints' config.json
++    # does) -- matches this project's most common/best-tested default. Override per-run with
++    # inference_server_openpi.py's --action-horizon if a given checkpoint turns out to want
++    # something else; loading itself doesn't fail either way (see that flag's own docstring).
++    TrainConfig(
++        name="yor_icl_pi05_easy_pnp_v2",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/sanity15k_annealing (2026-08-28) --
++    # Re-run of yor_icl_pi05_easy_pnp_v2_sanity15k (same 4-task pnp subset, 15k steps,
++    # pi0.5) with lr_schedule.decay_steps corrected to match num_train_steps=15_000 --
++    # the earlier run left decay_steps=50_000, so its cosine decay only completed ~30%
++    # of its span. Same model/data shape as every other family here: state_dim=15/
++    # action_dim=20 confirmed directly from this checkpoint's own
++    # assets/icl-dataset/norm_stats.json. action_horizon=10 is the same
++    # unconfirmed-but-standard assumption as the other icl-dataset entries above.
++    TrainConfig(
++        name="sanity15k_annealing",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_pi05_sanity15k_continued_15k (2026-08-30) --
++    # Continuation of yor_icl_pi05_easy_pnp_v2_sanity15k's step-14999 checkpoint for a further
++    # 15k steps with its own from-scratch cosine decay (per its own README). Same pi0.5 model/
++    # data shape as every other icl-dataset entry here: state_dim=15/action_dim=20 confirmed
++    # directly from this checkpoint's own assets/icl-dataset/norm_stats.json. action_horizon=10
++    # is the same unconfirmed-but-standard assumption as the other icl-dataset entries above.
++    TrainConfig(
++        name="yor_icl_pi05_sanity15k_continued_15k",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_pi0_fast_easy_pnp_v2_sanity15k_annealing (2026-08-30) --
++    # "FAST-tokenized analogue of yor_icl_pi05_easy_pnp_v2" (per its own README) -- plain
++    # pi0-FAST (openpi.models.pi0_fast.Pi0FASTConfig), NOT the VICTR-context variant
++    # (yor_icl_fast_victr_vision_expanded below uses pi0_fast_victr.Pi0FastVictrConfig
++    # instead). action_dim=20 confirmed directly from this checkpoint's own
++    # assets/icl-dataset/norm_stats.json (FAST models use the raw, un-padded action_dim --
++    # no 32-dim PaliGemma padding the way pi0.5's flow-matching head needs). action_horizon=10
++    # and max_token_len (class default, 250) are both unconfirmed -- this checkpoint's README
++    # states neither -- so action_horizon matches this project's standard icl-dataset
++    # assumption (see comment above yor_icl_pi05_easy_pnp_v2) rather than Pi0FASTConfig's own
++    # generic default (32), which isn't specific to this dataset.
++    #
++    # fast_model_tokenizer_kwargs (2026-08-30): initially registered with NO custom tokenizer
++    # (openpi's stock "physical-intelligence/fast") -- confirmed broken via real inference: every
++    # decode attempt produced a garbage token count (not a multiple of action_dim) and fell back
++    # to a constant zero-in-normalized-space action every time (see this project's history for
++    # the investigation). checkpoints/yor-icl-easy-pnp-v2-tokenizer/ is a from-scratch fit
++    # against real icl-dataset episodes (adityx23/icl-dataset, NOT the smaller icl-demo-dataset)
++    # for this checkpoint's actual 4-task training subset -- eggplant/pumpkin/red-chilli (exact
++    # task-string matches in the real training config) plus BOTH real orange-cube task variants
++    # (the training config's 4th filter_tasks string doesn't match either verbatim; per user
++    # direction 2026-08-30, included both rather than guessing one). Quantile-normalized with
++    # this checkpoint's own real q01/q99 stats (matching use_quantile_norm=True for PI0_FAST --
++    # see DataConfigFactory.create_base_config), scale=10.0/vocab_size=1024 (stock tokenizer's
++    # own defaults). 5 of 20 action dims (right_gripper, base_vel x3, lift_cmd -- unused/
++    # constant for this left-arm-only, stationary-base subset, q01==q99==0.0) forced to exactly
++    # 0 post-normalization rather than divided by their near-zero quantile range, which
++    # otherwise amplifies float noise into a vocab-poisoning outlier (confirmed: an unguarded
++    # fit asserted "Vocab size 1024 is too small for the range of tokens 1385839"). Self-decode
++    # round-trip on the fitted distribution: 50/50 clean.
++    #
++    # CONCLUSIVE NEGATIVE RESULT (2026-08-30): this custom-fit tokenizer does NOT fix decoding
++    # against the real checkpoint either -- still 100% decode failure. Traced one real model
++    # output by hand through the entire real pipeline (not just re-testing the symptom): the
++    # model emits well-formed "Action: <loc####>...<loc####>|" text (24 location tokens);
++    # decode->re-encode of that text back to token ids is exactly lossless (24 in, 24 out,
++    # bitwise identical to the model's own raw output); the vocab_size/fast_skip_tokens mapping
++    # formula is correct. The reshape still fails at that exact 24-token sequence, and does so
++    # identically for every action_horizon from 1 to 32 swept exhaustively (the reshape that
++    # fails, .reshape(-1, action_dim), doesn't even use action_horizon, so this was never an
++    # action_horizon-guessing problem). Conclusion: BPE vocabulary construction is not
++    # reproducible from statistically-similar data -- fitting on the exact right episodes with
++    # correct normalization still yields different merge rules than whatever the ORIGINAL
++    # training run's tokenizer produced, and the model's emitted token ids are tied to that
++    # exact vocabulary, not just "a" plausible one. Self-fitting a replacement tokenizer cannot
++    # work here without the original fitting run's exact data order and library state -- this
++    # checkpoint needs its own real tokenizer artifact from wherever it was actually trained.
++    #
++    # STILL BROKEN 2026-09-01, despite trying the checkpoint-specific real tokenizer:
++    # lair-nyu/yor-icl-pi05-easy-pnp-v2-fast-tokenizer is published directly (README + fit
++    # metadata.json) and explicitly named for this exact config ("Used by:
++    # yor_icl_pi0_fast_easy_pnp_v2_sanity15k_annealing") -- metadata.json: icl-dataset's
++    # 204-episode easy-pnp-v2 subset, 8,782 chunks, action_horizon=30 (NOT the 10 previously
++    # assumed here by convention with no real source -- this is a confirmed real value, so
++    # action_horizon below is updated to match), action_dim=20, vocab_size=1024, scale=10.0,
++    # normalization_mode=QUANTILES. Downloaded to
++    # checkpoints/yor-icl-pi05-easy-pnp-v2-fast-tokenizer/ (its bpe_tokenizer/tokenizer.json
++    # and a tokenizer_config.json patched tokenizer_class: TokenizersBackend ->
++    # PreTrainedTokenizerFast were copied up to the repo root -- AutoProcessor.from_pretrained
++    # needs both there, matching yor-icl-expanded-tokenizer's layout; the HF repo as
++    # downloaded only had them nested).
++    #
++    # Real dry-run test (actual live camera frames from the robot + realistic joint state,
++    # 5 independent calls): decode STILL fails identically every time -- "cannot reshape
++    # array of size 615 into shape (20)", same token sequence and same constant
++    # zero-in-normalized-space fallback action on every call, exactly the same failure
++    # signature as the self-fit tokenizer this replaced. So even this checkpoint's own
++    # real, explicitly-named tokenizer artifact does not fix decoding -- this now points at
++    # something wrong beyond "which tokenizer file" (the model's own generation for this
++    # checkpoint, a training/export mismatch, etc.), not yet diagnosed. Left pointing at
++    # this real tokenizer anyway (better provenance than the self-fit one, kept on disk at
++    # checkpoints/yor-icl-easy-pnp-v2-tokenizer/, no longer referenced) since it is not worse
++    # and is the more defensible default. inference.py's _OPENPI_BROKEN_CONFIGS still marks
++    # this checkpoint non-runnable -- do not flip it without a real fix, not just a new
++    # tokenizer.
++    TrainConfig(
++        name="yor_icl_pi0_fast_easy_pnp_v2_sanity15k_annealing",
++        model=pi0_fast.Pi0FASTConfig(
++            action_dim=20,
++            action_horizon=30,
++            fast_model_tokenizer_kwargs={
++                "fast_tokenizer_path": "/home/lairlab/icl_ws/checkpoints/yor-icl-pi05-easy-pnp-v2-fast-tokenizer"
++            },
++        ),
++        data=YorDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    TrainConfig(
++        name="yor_icl_pi05_expanded",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    TrainConfig(
++        name="yor_icl_ki_expanded_subtask",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    TrainConfig(
++        name="yor_icl_pi05_rabc",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    TrainConfig(
++        name="yor_icl_ki_subtask_rabc",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_fast_victr_vision_expanded_full (2026-08-27, resolved 2026-08-28) --
++    # *** STATUS 2026-09-06: RESOLVED. Architecture correct, real tokenizer wired in (see
++    # STATUS 2026-08-28 below), and a real dry-run with actual VICTR context supplied now
++    # decodes cleanly -- shape (30, 16), no NaN, non-fallback values, real retrieval hit
++    # (episode 222, score 42.2). The decode failures seen earlier in this project's history
++    # were ALWAYS tested without context supplied (context_images=None, the query-only
++    # fallback path) -- this was never a tokenizer bug, it just needed the context it was
++    # actually trained to condition on. Still pending: one live-hardware behavioral pass
++    # (this confirms decode/shape correctness, not real-world task performance) once the
++    # robot is back online. ***
++    #
++    # Earlier attempts here (both since deleted) used plain pi0_fast.Pi0FASTConfig and guessed
++    # action_horizon (32, then 4) -- both wrong, and for the wrong reason: this checkpoint isn't
++    # plain pi0-FAST at all. It's VICTR context-chunk conditioning ported onto pi0-FAST
++    # (openpi.models.pi0_fast_victr.Pi0FastVictrConfig/Pi0FastVictr, added 2026-08-28 from the
++    # real source, provided directly by the training author) -- every training example
++    # conditions on num_context_chunks=1 retrieved demonstration chunk (DINOv2 visual
++    # similarity), so serving without that context is a structurally different input than what
++    # the model was ever trained on. That -- not action_horizon -- was the real cause of the
++    # decode failures documented in this session's history (irregular garbage-length FAST
++    # decodes, output collapsing to a constant fallback across hundreds of ticks).
++    # Confirmed 2026-08-28 by direct orbax metadata inspection: the checkpoint's saved params
++    # include `neighbor_rank_embedding.embedding.value` (VICTR-specific, not part of plain
++    # pi0-FAST) with shape (1, 2048) matching Pi0FastVictrConfig(num_context_chunks=1). A full
++    # param-key diff between this config's model structure and the checkpoint's orbax metadata
++    # is an exact 33/33 match, zero missing, zero extra -- and a real weight load via
++    # policy_config.create_trained_policy succeeds cleanly (no shape errors). This is as strong
++    # a confirmation of correct architecture as is available short of a real rollout.
++    # Real hyperparameters below (action_dim=20, action_horizon=30, max_token_len=256,
++    # num_context_chunks=1, context_frames_per_chunk=1, retrieval_metric="vision") are copied
++    # directly from the actual training TrainConfig (`yor_icl_fast_victr_vision_expanded`,
++    # provided directly by the training author 2026-08-28), not guessed -- supersedes every
++    # action_horizon value tried/guessed in this config's earlier history (32, 4 were both wrong;
++    # 30 is the real trained value, confirmed by the actual source, not inferred from a decode
++    # error like the 4 guess was).
++    # state_dim=15/action_dim=20 additionally cross-checked against this checkpoint's own
++    # assets/icl-dataset/norm_stats.json (len(norm_stats.state.mean)==15,
++    # len(norm_stats.actions.mean)==20) -- consistent with the real TrainConfig.
++    #
++    # STATUS 2026-08-28 (later): retrieval context now wired in (gap #2 below resolved).
++    # openpi/policies/yor_retrieval.py (RetrievalContextInputs) written, porting the real
++    # mechanism from ~/viktr's working pi05_context.py/retrieval/* (DINOv2 CLS embedding,
++    # L2 nearest-neighbor, chunk-to-text formatting) -- not reimplemented from prose. Pool
++    # built by build_victr_pool.py from adityx23/icl-demo-dataset (285 episodes/27 tasks,
++    # per user direction 2026-08-28: "this is the context pool we're using") into
++    # assets/victr_icl_pool_demo/ -- NOT byte-identical to the real training-side pool
++    # (assets/victr_icl_pool_expanded_224/, 31 tasks from the full icl-dataset), since we
++    # don't have that pool; this is the best available stand-in. data=YorVictrDataConfig
++    # below now actually populates context_images/context_tokens at inference time instead
++    # of leaving them None.
++    #
++    # STATUS 2026-08-28 (later still): gap #1 also resolved. The real yor-icl-expanded
++    # FAST tokenizer (4 files, ~190KB) was pushed to lair-research-nyu/nyu-finger-robot's
++    # lerobot0.6.0 branch ("Add yor-icl-expanded FAST action tokenizer (deploy
++    # dependency)", commit a167094c5f) -- force-added despite that repo's own
++    # outputs/-wide .gitignore, per its commit message. Downloaded to
++    # checkpoints/yor-icl-expanded-tokenizer/ (matches processor_config.json's own
++    # declared action_dim=20/time_horizon=30 -- consistent with this checkpoint).
++    #
++    # STATUS 2026-09-01: superseded by lair-nyu/yor-icl-expanded-fast-tokenizer, published
++    # directly (with README + fit metadata.json) rather than force-pushed into an unrelated
++    # repo's .gitignore'd branch. Its own metadata.json confirms the exact same fit this
++    # checkpoint needs: icl-dataset expanded task set, 31 tasks/1,784 episodes/96,010 chunks,
++    # action_horizon=30/action_dim=20/vocab_size=1024/scale=10.0, normalization_mode=QUANTILES
++    # -- all consistent with the values already used here. README explicitly names this repo's
++    # yor_icl_fast_victr_vision_expanded as one of the configs this tokenizer is fit for.
++    # Downloaded to checkpoints/yor-icl-expanded-fast-tokenizer/ (same tokenizer_config.json/
++    # tokenizer.json root-copy fix needed as yor-icl-pi05-easy-pnp-v2-fast-tokenizer below --
++    # see its comment); fast_model_tokenizer_kwargs below now points at it instead of the
++    # earlier ad hoc download.
++    #
++    # VERIFIED NOT A REGRESSION 2026-09-01: real dry-run test (live camera frames, no VICTR
++    # context supplied -- context_images=None) with both the old (yor-icl-expanded-tokenizer)
++    # and new tokenizer produced byte-identical decode failures ("cannot reshape array of
++    # size 599 into shape (20)", same raw token sequence, same fallback action both times) --
++    # so this checkpoint's real-image decode was ALREADY failing before that tokenizer swap,
++    # not broken by it. That WAS misread at the time as evidence the no-context path fails to
++    # decode cleanly, not just to act sensibly -- RESOLVED 2026-09-06: re-tested WITH real
++    # VICTR context supplied (the pool had been deleted from disk in the meantime and was
++    # rebuilt -- see this project's history), and decode succeeds cleanly, shape (30, 16), no
++    # fallback. So the no-context failures above were exactly what YorInputs' docstring always
++    # said they'd be -- an untrained input configuration -- not a separate decode bug. This
++    # checkpoint is not "believed broken" any more; see the STATUS block above.
++    TrainConfig(
++        name="yor_icl_fast_victr_vision_expanded",
++        model=pi0_fast_victr.Pi0FastVictrConfig(
++            action_dim=20,
++            action_horizon=30,
++            max_token_len=256,
++            num_context_chunks=1,
++            context_frames_per_chunk=1,
++            retrieval_metric="vision",
++            fast_model_tokenizer_kwargs={
++                "fast_tokenizer_path": "/home/lairlab/icl_ws/checkpoints/yor-icl-expanded-fast-tokenizer"
++            },
++        ),
++        data=YorVictrDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # pi0.5 VICTR expanded arms, verified against training fork 086a9869.
++    # Both use 30-step actions, one image/context chunk, and 64 text tokens.
++    # Live value retrieval uses the existing zero-shot Robometer worker.
++    TrainConfig(
++        name="yor_icl_victr_vision_expanded",
++        model=pi0_victr.Pi0VictrConfig(
++            pi05=True,
++            action_dim=32,
++            action_horizon=30,  # confirmed in training fork 086a9869
++            num_context_chunks=1,
++            context_frames_per_chunk=1,
++            retrieval_metric="vision",
++        ),
++        data=YorVictrDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    TrainConfig(
++        name="yor_icl_victr_value_expanded",
++        model=pi0_victr.Pi0VictrConfig(
++            pi05=True,
++            action_dim=32,
++            action_horizon=30,  # confirmed in training fork 086a9869
++            num_context_chunks=1,
++            context_frames_per_chunk=1,
++            retrieval_metric="value",
++        ),
++        data=YorVictrDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/pi05_extended_deltarot6d_full (2026-09-04) --
++    # pi0.5 baseline, expanded task set -- same model architecture/dims as yor_icl_pi05_expanded
++    # (Pi0Config(pi05=True, action_dim=32, action_horizon=10), state_dim=15), but a DIFFERENT
++    # action representation: per-arm [delta_xyz(3), rot6d(6), gripper(1)] x 2 = 20 raw dims,
++    # not the absolute [left_ee(7), right_ee(7), gripper(2)] layout every other icl-dataset
++    # pi0.5 entry here uses. Confirmed via direct comparison of this checkpoint's own
++    # norm_stats.json actions against yor_icl_pi05_expanded's: dims [0:3]/[10:13] have
++    # near-zero mean, tiny std (~0.02) -- small per-step position deltas, not absolute
++    # coordinates; dims [3:9]/[13:19] cluster in [-1, 1] with near-mirror symmetry between
++    # arms -- rotation matrix columns, not a quaternion. Uses YorDeltaRot6dDataConfig/
++    # YorDeltaRot6dOutputs (returns the raw 20-dim prediction unconverted -- integration
++    # against the current EE pose happens in inference_server_openpi.py, at the point where
++    # the current EE pose from the teleop packet is actually available).
++    #
++    # RESOLVED 2026-09-06 (was a safety-critical open question): "delta rot6d" names two
++    # SEPARATE qualifiers, not one -- position is a delta, but rot6d is the ABSOLUTE target
++    # orientation, not a rotation delta to compose with the current one. An initial
++    # implementation assumed body-frame delta composition (current-quat * delta-quat,
++    # compounded step-to-step across a chunk) and a real dry-run sanity check against real
++    # camera+state streams found this implied ~900 deg/sec sustained wrist rotation --
++    # physically impossible, so --publish was withheld pending investigation (see this
++    # project's history / the earlier audit artifact for the original finding). Root-caused
++    # by comparing this checkpoint's real outputs against real recorded icl-dataset
++    # trajectories: (1) a single step's raw rot6d, decoded with ZERO composition, is already
++    # ~120-150 deg from identity -- inconsistent with "a small per-tick delta" under any
++    # composition order; (2) across a real 10-step predicted chunk, consecutive steps' rot6d
++    # values are nearly identical (~0.001-0.005 change per component) while delta_xyz grows
++    # smoothly and monotonically -- exactly the signature of "each step predicts [position
++    # delta from THIS TICK's current pose, absolute target orientation for that future
++    # timestep]", not a per-step delta meant to compound. Fixed in
++    # inference_server_openpi.py's _integrate_delta_rot6d_arm (rot6d used directly as the
++    # absolute target, no composition) and its main loop (every step in a chunk now
++    # integrates against the same real current pose, not the previous step's own
++    # reconstructed target) -- re-verified empirically: implied wrist velocity on the same
++    # real data dropped from ~900 deg/sec to ~0.6 deg/sec, consistent with a careful reach
++    # phase. This conclusion rests on internal consistency of the model's own real outputs
++    # (strong evidence, not the same as a confirmed training-side source, which this repo
++    # doesn't have) -- re-validate with a fresh non-publishing dry run before trusting this
++    # on hardware, same as before, but the specific ~900 deg/sec failure mode is resolved.
++    TrainConfig(
++        name="yor_icl_pi05_deltarot6d_expanded",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDeltaRot6dDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_pi05_easy_pnp_v2_absolute_joint_sanity15k (2026-09-08) --
++    # Same 4-task pnp subset/15k-step sanity-check family as yor_icl_pi05_easy_pnp_v2_sanity15k,
++    # but absolute JOINT-space observation AND action (icl-dataset never recorded a joint-space
++    # action, so this checkpoint's action is the future window of observation.state itself --
++    # see its own README). state_dim=15/action real-dim=15 confirmed directly from this
++    # checkpoint's own assets/icl-dataset/norm_stats.json ("state" and "actions" both len 15,
++    # not the 20-dim EE-pose layout every other icl-dataset entry above uses).
++    # action_dim=32 (the model's padded flow-matching space, not the real action size) matches
++    # every other pi0.5 entry here -- the shared PadStatesAndActions transform pads any real
++    # action dim up to it, so this is architecture-constant, not checkpoint-specific.
++    # action_horizon=10 is the same unconfirmed-but-standard assumption as the other
++    # icl-dataset entries above (this checkpoint's README states neither).
++    TrainConfig(
++        name="yor_icl_pi05_easy_pnp_v2_absolute_joint_sanity15k",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorAbsoluteJointDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_pi05_aligned_q_sanity15k (2026-09-10) --
++    # 4-task pnp subset, 15k steps, batch 256, 4xH200. Same 15D joint-space observation.state
++    # input as every other icl-dataset entry above, but action is
++    # Hannibal52Barca/icl-dataset-fixed-action's `action.q_target` -- a GENUINE recorded 14-dim
++    # ([left_joints(7), right_joints(7)], no lift) IK reconstruction of action.left_ee/
++    # action.right_ee anchored per-episode to observation.state's own FK, not the pseudo-action
++    # yor_icl_pi05_easy_pnp_v2_absolute_joint_sanity15k trains on (see that entry's comment and
++    # both checkpoints' own READMEs). state_dim=15/action real-dim=14 confirmed directly from
++    # this checkpoint's own assets/icl-dataset/norm_stats.json.
++    # action_dim=32: architecture-constant, same reasoning as every other pi0.5 icl-dataset
++    # entry above. action_horizon=30 (2026-09-10, per user direction -- was 10): this
++    # checkpoint's README states neither a chunk_size nor an action_horizon, so 30 is an
++    # UNVERIFIED override, same caveat load_policy()'s own action_horizon_override warns about
++    # -- querying at a different length than 10 doesn't error (action_in_proj/action_out_proj
++    # shapes don't depend on it), but that's not the same as this checkpoint having been
++    # trained to produce good 30-step chunks. Re-validate with a dry run before trusting
++    # anything past step ~10 of a predicted chunk on hardware.
++    TrainConfig(
++        name="yor_icl_pi05_aligned_q_sanity15k",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=30),
++        data=YorAlignedJointDataConfig(state_dim=15, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_pi05_aligned_deltarot6d_sanity15k (2026-09-10) --
++    # 4-task pnp subset, 15k steps, batch 256, 4xH200. Same 20-dim per-arm
++    # [delta_xyz(3), rot6d(6), gripper(1)] action as yor_icl_pi05_deltarot6d_expanded (reuses
++    # YorDeltaRot6dOutputs unchanged), but state_dim=14 instead of 15: proprioception here is
++    # Hannibal52Barca/icl-dataset-fixed-obs's new observation.left_ee/observation.right_ee
++    # (absolute EE pose, quat+xyz per arm, FK'd from the real joint encoders,
++    # quaternion-hemisphere-corrected) -- NOT joint-space observation.state. The older
++    # pi05_extended_deltarot6d_full conditioned this same EE-space delta/rot6d action on
++    # joint-space state, a cross-modality mismatch this checkpoint's README says it fixes by
++    # matching proprioception to the action's own space. state_dim=14/action real-dim=20
++    # confirmed directly from this checkpoint's own assets/icl-dataset/norm_stats.json.
++    # inference_server_openpi.py's uses_ee_state_input flag feeds this checkpoint
++    # build_ee_state() (EE pose) instead of build_state() (joints) accordingly -- get that wrong
++    # and this checkpoint sees the exact cross-modality mismatch its README says it was trained
++    # to fix.
++    TrainConfig(
++        name="yor_icl_pi05_aligned_deltarot6d_sanity15k",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDeltaRot6dDataConfig(state_dim=14, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_pi05_canonical_sanity15k, step 5000 (2026-09-10) --
++    # Mid-training checkpoint (step 5000 of a 15000-step target, still in progress as of this
++    # writing -- job 17333295, notes/ICRA_plan.md arm 1) from the "canonical" action/observation
++    # space sanity run: a training-side fix for the exact quaternion-hemisphere instability
++    # build_ee_state()'s _hemisphere_correct() patches around for
++    # yor_icl_pi05_aligned_deltarot6d_sanity15k -- this run switched the STATE representation to
++    # rot6d instead of a raw quaternion, which is hemisphere-invariant by construction
++    # (R(q) == R(-q)), so no per-tick correction is possible OR needed. Same 20-dim per-arm
++    # [delta_xyz(3), rot6d(6), gripper(1)] action (reuses YorDeltaRot6dOutputs unchanged) but
++    # 18-dim per-arm [pos(3), rot6d(6)] state instead of the older checkpoints' 14/15-dim
++    # layouts -- see build_rot6d_state()/is inference_server_openpi.py's uses_rot6d_state_input.
++    # state_dim=18/action real-dim=20 confirmed directly from this checkpoint's own
++    # assets/icl-dataset/norm_stats.json. action_horizon=10: this checkpoint's own README states
++    # neither a chunk_size nor an action_horizon -- same unconfirmed-but-standard assumption as
++    # every other icl-dataset entry above.
++    TrainConfig(
++        name="yor_icl_pi05_canonical_sanity15k",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=10),
++        data=YorDeltaRot6dDataConfig(state_dim=18, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_pi05_canonical_extended, step 20000 (2026-09-11) --
++    # Same canonical action/observation space as yor_icl_pi05_canonical_sanity15k above, trained
++    # on the larger "extended" dataset instead of the 15k sanity subset. Identical tensor layout:
++    # 18-dim per-arm [pos(3), rot6d(6)] state, 20-dim per-arm [delta_xyz(3), rot6d(6), gripper(1)]
++    # action -- confirmed by diffing this checkpoint's own assets/icl-dataset/norm_stats.json
++    # against the sanity15k one (state 18 / actions 20 in both), so YorDeltaRot6dDataConfig and
++    # YorDeltaRot6dOutputs carry over unchanged and inference_server_openpi.py's
++    # uses_rot6d_state_input path already covers it. Norm stats are loaded from the checkpoint's
++    # own assets dir, so the different training distribution needs no config change here.
++    # action_horizon=30: stated outright by the step-35000 upload's own README
++    # ("pi0_config.Pi0Config(pi05=True, action_horizon=30)"), and independently confirmed by the
++    # run's owner (2026-09-11). NOT the standard 10 that every other icl-dataset entry above
++    # assumes -- so do not "fix" this back to 10 for consistency. That README also documents the
++    # exact state/action encoding this config reproduces: 18-dim per-arm [pos(3), rot6d(6)] state,
++    # 20-dim per-arm [delta_pos(3), rot6d(6), grip(1)] action. It names a training-side
++    # YorInputsCanonical that does not exist in this repo; at inference the equivalent state is
++    # built by inference_server_openpi.py's build_rot6d_state() and YorInputs(state_dim=18) is a
++    # pass-through slice, so YorDeltaRot6dDataConfig is the correct config here.
++    TrainConfig(
++        name="yor_icl_pi05_canonical_extended",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=30),
++        data=YorDeltaRot6dDataConfig(state_dim=18, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
++    # -- lair-nyu/yor_icl_pi05_canonical_warmstart_baseline, step 10000 (2026-09-13) --
++    # Plain pi0.5 control arm for the VICTR ctx3cam retrieval experiments, WARM-STARTED from
++    # yor_icl_pi05_canonical_extended step 40000 (per its README). Same canonical space: norm_stats
++    # confirmed state 18 / actions 20, identical to canonical_extended. action_horizon=30 is
++    # inherited, not restated by the README -- but a warm start restores canonical_extended's
++    # parameters, and the action-expert shapes depend on the horizon, so a different value could
++    # not have loaded. Must also be listed in inference_server_openpi.py's _DELTA_ROT6D_CONFIGS and
++    # _ROT6D_STATE_CONFIGS.
++    TrainConfig(
++        name="yor_icl_pi05_canonical_warmstart_baseline",
++        model=pi0_config.Pi0Config(pi05=True, action_dim=32, action_horizon=30),
++        data=YorDeltaRot6dDataConfig(state_dim=18, assets=AssetsConfig(asset_id="icl-dataset")),
++    ),
+ ]
+ 
++# These local data configs are already serving-only. Explicit twins match the
++# deployment runbook and make it clear no precomputed training context is used.
++_victr_value = next(c for c in _CONFIGS if c.name == "yor_icl_victr_value_expanded")
++_CONFIGS.append(dataclasses.replace(
++    _victr_value, name="yor_icl_victr_vision_value_expanded",
++    model=dataclasses.replace(_victr_value.model, retrieval_metric="vision_value"),
++))
++_CONFIGS.extend([
++    dataclasses.replace(c, name=c.name + "_serve")
++    for c in _CONFIGS if c.name in {
++        "yor_icl_victr_vision_expanded", "yor_icl_victr_value_expanded", "yor_icl_victr_vision_value_expanded",
++    }
++])
++
++# experiments.py EXP B2: the base pi0.5 expanded checkpoint (trained WITHOUT context), loaded into
++# the VICTR model class so a retrieved demonstration can be injected at deployment. Model dims,
++# horizon and data pipeline match yor_icl_pi05_expanded; the only additions are the context
++# blocks, whose neighbor-rank embedding the checkpoint lacks and is therefore zero. Retrieval is
++# by vision similarity (the base model has no trained metric).
++_pi05_expanded = next(c for c in _CONFIGS if c.name == "yor_icl_pi05_expanded")
++_CONFIGS.append(dataclasses.replace(
++    _pi05_expanded,
++    name="yor_icl_pi05_expanded_with_context",
++    model=pi0_victr.Pi0VictrConfig(
++        pi05=_pi05_expanded.model.pi05,
++        action_dim=_pi05_expanded.model.action_dim,
++        action_horizon=_pi05_expanded.model.action_horizon,
++        num_context_chunks=1,
++        context_frames_per_chunk=1,
++        retrieval_metric="vision",
++        missing_rank_embedding="zeros",
++    ),
++    data=YorVictrDataConfig(
++        state_dim=_pi05_expanded.data.state_dim, assets=_pi05_expanded.data.assets, retrieval_metric="vision"
++    ),
++))
++
++# ctx3cam VICTR arms, warm-started from yor_icl_pi05_canonical_extended step 40000
++# (lair-nyu/yor_icl_victr_{vision,value,vision_value}_canonical_ctx3cam-step{5000,10000}). Model
++# fields as in LucaMacesanu/openpi@5ea2659's yor_icl_victr_*_canonical_ctx3cam TrainConfigs.
++# vision_value (added 2026-09-14 for the step-10000 upload) is the fused-metric arm: same
++# architecture, retrieval_metric="vision_value" -- yor_retrieval already implements the fusion.
++# Its norm_stats.json is byte-identical to the other two arms' (md5 3f7d9aae83), so the shared
++# context_norm_stats_path in YorCanonicalCtx3camDataConfig is correct for it too.
++# The RICL-pi0.5 interp arm is registered separately below (yor_icl_victr_vision_interp_canonical_ctx3cam_serve).
++for _metric in ("vision", "value", "vision_value"):
++    _CONFIGS.append(TrainConfig(
++        name=f"yor_icl_victr_{_metric}_canonical_ctx3cam_serve",
++        model=pi0_victr.Pi0VictrConfig(
++            pi05=True, action_dim=32, action_horizon=30, retrieval_metric=_metric,
++            num_context_chunks=1, context_frames_per_chunk=3, context_text_max_length=256,
++        ),
++        data=YorCanonicalCtx3camDataConfig(assets=AssetsConfig(asset_id="icl-dataset")),
++    ))
++
++# experiments.py EXP B2 (2026-09-15): the canonical warmstart baseline pi0.5 (trained WITHOUT context,
++# lair-nyu/yor_icl_pi05_canonical_warmstart_baseline-step10000) loaded into the VICTR model class so a
++# vision-retrieved demonstration can be injected at deployment. Uses the ctx3cam context encoding of the
++# VICTR arms it is the control for (three camera frames + 256-token canonical text per chunk); dims,
++# horizon and normalization match yor_icl_pi05_canonical_warmstart_baseline. The checkpoint has no
++# neighbor-rank embedding, so it is zeros (Pi0VictrConfig.missing_rank_embedding), as in the expanded B2.
++_CONFIGS.append(TrainConfig(
++    name="yor_icl_pi05_canonical_warmstart_baseline_with_context",
++    model=pi0_victr.Pi0VictrConfig(
++        pi05=True, action_dim=32, action_horizon=30, retrieval_metric="vision",
++        num_context_chunks=1, context_frames_per_chunk=3, context_text_max_length=256,
++        missing_rank_embedding="zeros",
++    ),
++    data=YorCanonicalCtx3camDataConfig(assets=AssetsConfig(asset_id="icl-dataset"), retrieval_metric="vision"),
++))
++
++# RICL-pi0.5 baseline (lair-nyu/yor_icl_victr_vision_interp_canonical_ctx3cam-step{5000,10000}): the vision
++# ctx3cam arm plus RICL's action interpolation, as trained on LucaMacesanu/openpi main (8083a2c,
++# config yor_icl_victr_vision_interp_canonical_ctx3cam): Pi0VictrConfig(use_action_interpolation=True,
++# lamda=3.0) and the data side's continuous interpolation (top-1 neighbor's canonical 30-step window,
++# exp(-3.0 * top-1 DINOv2 distance / pool max pairwise distance)). lamda=3.0 is the fork's measured
++# choice for this dataset's distance scale (10.0 left the blend nearly inert). Norm stats are
++# byte-identical to the other ctx3cam checkpoints', so the shared context_norm_stats_path applies.
++_CONFIGS.append(TrainConfig(
++    name="yor_icl_victr_vision_interp_canonical_ctx3cam_serve",
++    model=pi0_victr.Pi0VictrConfig(
++        pi05=True, action_dim=32, action_horizon=30, retrieval_metric="vision",
++        num_context_chunks=1, context_frames_per_chunk=3, context_text_max_length=256,
++        use_action_interpolation=True, lamda=3.0,
++    ),
++    data=YorCanonicalCtx3camDataConfig(
++        assets=AssetsConfig(asset_id="icl-dataset"), retrieval_metric="vision",
++        use_continuous_action_interpolation=True, lamda=3.0,
++    ),
++))
++
+ if len({config.name for config in _CONFIGS}) != len(_CONFIGS):
+     raise ValueError("Config names must be unique.")
+ _CONFIGS_DICT = {config.name: config for config in _CONFIGS}
+diff --git a/src/openpi/transforms.py b/src/openpi/transforms.py
+index 272375e..aae68e7 100644
+--- a/src/openpi/transforms.py
++++ b/src/openpi/transforms.py
+@@ -334,6 +334,9 @@ class PadStatesAndActions(DataTransformFn):
+         data["state"] = pad_to_dim(data["state"], self.model_action_dim, axis=-1)
+         if "actions" in data:
+             data["actions"] = pad_to_dim(data["actions"], self.model_action_dim, axis=-1)
++        # RICL-pi0.5: the retrieved neighbor's action window is blended against actions/velocity.
++        if "nearest_action" in data:
++            data["nearest_action"] = pad_to_dim(data["nearest_action"], self.model_action_dim, axis=-1)
+         return data
+ 
+ 

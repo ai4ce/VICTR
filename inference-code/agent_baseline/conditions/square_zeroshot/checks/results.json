@@ -1,0 +1,215 @@
+{
+  "created_at_utc": "2026-10-10T00:30:28.377563+00:00",
+  "unit_tests": {
+    "command": "openpi/.venv/bin/python -B -m unittest discover -s agent_runs/astra/put_the_square_on_the_peg_zeroshot/executor -p test_executor.py -v",
+    "tests": 18,
+    "result": "PASS",
+    "elapsed_s": 5.979,
+    "existing_safety_tests_retained": true,
+    "saved_logs_environment": "ZS_OFFLINE_ROOT=/home/lairlab/icl_ws/agent_runs/astra/put_the_square_on_the_peg_zeroshot/checks/offline"
+  },
+  "offline": {
+    "network_publishing": false,
+    "robot_connections": false,
+    "inputs": "synthetic state and blank images",
+    "publisher": "in-memory fake; bind/send do not create sockets",
+    "cases": [
+      {
+        "log_path": "/home/lairlab/icl_ws/agent_runs/astra/put_the_square_on_the_peg_zeroshot/checks/offline/left_finish",
+        "active_arm": "left",
+        "end_time": 1791592149.8214042,
+        "exit_reason": "offline_mock_complete",
+        "commands": 40,
+        "state_rows": 78,
+        "event_rows": 17,
+        "chunk_rows": 8,
+        "snapshots": 6,
+        "images": 18,
+        "acks": 3,
+        "arm_choice_events": 1,
+        "modes": [
+          "chunk",
+          "queue_empty_hold"
+        ],
+        "agent_usage": true,
+        "agent_final": true
+      },
+      {
+        "log_path": "/home/lairlab/icl_ws/agent_runs/astra/put_the_square_on_the_peg_zeroshot/checks/offline/left_state",
+        "active_arm": "left",
+        "end_time": 1791592153.7721086,
+        "exit_reason": "abort: stream receipt age >2s",
+        "commands": 11,
+        "state_rows": 50,
+        "event_rows": 19,
+        "chunk_rows": 8,
+        "snapshots": 2,
+        "images": 6,
+        "acks": 3,
+        "arm_choice_events": 1,
+        "modes": [
+          "chunk",
+          "queue_empty_hold"
+        ],
+        "agent_usage": true,
+        "agent_final": true
+      },
+      {
+        "log_path": "/home/lairlab/icl_ws/agent_runs/astra/put_the_square_on_the_peg_zeroshot/checks/offline/right_camera",
+        "active_arm": "right",
+        "end_time": 1791592152.696567,
+        "exit_reason": "abort: stream receipt age >2s",
+        "commands": 12,
+        "state_rows": 47,
+        "event_rows": 16,
+        "chunk_rows": 8,
+        "snapshots": 2,
+        "images": 6,
+        "acks": 3,
+        "arm_choice_events": 1,
+        "modes": [
+          "chunk",
+          "queue_empty_hold",
+          "stale_hold"
+        ],
+        "agent_usage": true,
+        "agent_final": true
+      },
+      {
+        "log_path": "/home/lairlab/icl_ws/agent_runs/astra/put_the_square_on_the_peg_zeroshot/checks/offline/right_finish",
+        "active_arm": "right",
+        "end_time": 1791592151.7239513,
+        "exit_reason": "offline_mock_complete",
+        "commands": 40,
+        "state_rows": 78,
+        "event_rows": 17,
+        "chunk_rows": 8,
+        "snapshots": 6,
+        "images": 18,
+        "acks": 3,
+        "arm_choice_events": 1,
+        "modes": [
+          "chunk",
+          "queue_empty_hold"
+        ],
+        "agent_usage": true,
+        "agent_final": true
+      }
+    ]
+  },
+  "safety_numeric_constants_unchanged": true,
+  "executor_diff": [
+    {
+      "file": "executor/client.py",
+      "added": 11,
+      "removed": 10,
+      "baseline_sha256": "9e04ced79da13c5077283c9f15cae67e090341a337fc5fba6f4e78b7384aa90a",
+      "current_sha256": "cb5c9a08e56ce3fc23543b5d8dc87cfabb68688db86d1269e38ac95ed5a409cd"
+    },
+    {
+      "file": "executor/core.py",
+      "added": 23,
+      "removed": 13,
+      "baseline_sha256": "4d6b8b3b63725a660c9b80b659f8c4ea643a9eef8ea93d15cae1d56126e04c32",
+      "current_sha256": "d3d9aae015ad17dbac9f54d2ee4911b2850fd1806f5b548d221e0d7a3e842330"
+    },
+    {
+      "file": "executor/files.py",
+      "added": 0,
+      "removed": 0,
+      "baseline_sha256": "897ac8351ffa1abc85ab7d5320718f22a031ee9f33cd164839100659e3d5b393",
+      "current_sha256": "897ac8351ffa1abc85ab7d5320718f22a031ee9f33cd164839100659e3d5b393"
+    },
+    {
+      "file": "executor/run_executor.py",
+      "added": 16,
+      "removed": 11,
+      "baseline_sha256": "3bb3b34051fccda773ce84914a4d1985c6039d04c5664b6db10cf9cdfbf23adf",
+      "current_sha256": "63e75df38f1055fa51665b85df0cd5c222d861d2bfbeed81befca7f243cf4e08"
+    },
+    {
+      "file": "executor/safety.py",
+      "added": 6,
+      "removed": 5,
+      "baseline_sha256": "ca09910c5ca82d90e6415fc8dabea0e499a3bd1261157675f51375304423b5d1",
+      "current_sha256": "5bdbed2077ae62100e315ad584953a426471756ec2ebb3048ad1463ffb89c427"
+    },
+    {
+      "file": "executor/streams.py",
+      "added": 0,
+      "removed": 0,
+      "baseline_sha256": "5b30cdfe41be455b1b482c2782cb51e988fea046eb0aa584c8e88874b7f6e4bb",
+      "current_sha256": "5b30cdfe41be455b1b482c2782cb51e988fea046eb0aa584c8e88874b7f6e4bb"
+    },
+    {
+      "file": "executor/summarize_usage.py",
+      "added": 0,
+      "removed": 0,
+      "baseline_sha256": "dbe2096be099bca8239ba9f9b345a8d7f2b69985f73590ae9e7a20478c26d9af",
+      "current_sha256": "dbe2096be099bca8239ba9f9b345a8d7f2b69985f73590ae9e7a20478c26d9af"
+    },
+    {
+      "file": "executor/test_executor.py",
+      "added": 266,
+      "removed": 47,
+      "baseline_sha256": "66704c3bd634696ccfe9ed24f9fd00bdd46fe4c66c2be753cf8a0ebf7862991e",
+      "current_sha256": "a262d6aabe8043fb4a0c69480dc213c893d51fa0d69876f3b2b6132928c6fcc3"
+    }
+  ],
+  "live_check": {
+    "check": "read-only live stream health",
+    "checked_at": 1791592039.5164094,
+    "command_port_5572_free": true,
+    "command_port_owners": [],
+    "port_check_error": null,
+    "publisher_created": false,
+    "command_port_bound": false,
+    "scene_data_saved": false,
+    "passed": true,
+    "state_age_s": 3.5474076867103577e-06,
+    "state_pose_fields_readable": true,
+    "gate_readable": true,
+    "gate_enabled": true,
+    "cameras": {
+      "zed": {
+        "age_s": 0.04844183661043644,
+        "size": [
+          1280,
+          720
+        ]
+      },
+      "fish0": {
+        "age_s": 0.04844183661043644,
+        "size": [
+          640,
+          480
+        ]
+      },
+      "fish1": {
+        "age_s": 0.04844183661043644,
+        "size": [
+          640,
+          480
+        ]
+      },
+      "fish2": {
+        "age_s": 0.04844183661043644,
+        "size": [
+          640,
+          480
+        ]
+      }
+    },
+    "errors": []
+  },
+  "isolation": {
+    "excluded_files_read": false,
+    "practice_attempts": 0,
+    "real_robot_commands": 0
+  },
+  "review_state": {
+    "zs_commits": 0,
+    "zs_frozen_exists": false,
+    "read_only_chmod_applied": false
+  }
+}

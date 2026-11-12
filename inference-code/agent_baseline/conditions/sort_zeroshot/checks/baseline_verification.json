@@ -1,0 +1,63 @@
+{
+  "baseline_repo": "/home/lairlab/icl_ws/agent_runs/astra/sort_the_items_into_their_containers",
+  "baseline_commit": "331ea9ad3c4e2e10173179173db0241d372f65a8",
+  "verification": "Exact byte equality against git show before any executor edits",
+  "files": [
+    {
+      "path": "executor/client.py",
+      "bytes": 7202,
+      "sha256": "b44968856bc8e58850376e98602c05b769b69fff06d4d77dd452690fd64b68c0",
+      "source_equals_git_show": true,
+      "copy_equals_git_show_before_edit": true
+    },
+    {
+      "path": "executor/core.py",
+      "bytes": 9007,
+      "sha256": "c26d3e2a49f1199b99e86caa10bb9f7d3893738b4a025c31e506f5d95429b4ac",
+      "source_equals_git_show": true,
+      "copy_equals_git_show_before_edit": true
+    },
+    {
+      "path": "executor/files.py",
+      "bytes": 2178,
+      "sha256": "897ac8351ffa1abc85ab7d5320718f22a031ee9f33cd164839100659e3d5b393",
+      "source_equals_git_show": true,
+      "copy_equals_git_show_before_edit": true
+    },
+    {
+      "path": "executor/run_executor.py",
+      "bytes": 12659,
+      "sha256": "9ba828516bdcbea9d521934f0454a72803152904b9811679bf9756b5cde3c86a",
+      "source_equals_git_show": true,
+      "copy_equals_git_show_before_edit": true
+    },
+    {
+      "path": "executor/safety.py",
+      "bytes": 4258,
+      "sha256": "ca98430b06a693f209e2cc0f31b260d6e763b05ef18c9310b089b4f575400f86",
+      "source_equals_git_show": true,
+      "copy_equals_git_show_before_edit": true
+    },
+    {
+      "path": "executor/streams.py",
+      "bytes": 5948,
+      "sha256": "5b30cdfe41be455b1b482c2782cb51e988fea046eb0aa584c8e88874b7f6e4bb",
+      "source_equals_git_show": true,
+      "copy_equals_git_show_before_edit": true
+    },
+    {
+      "path": "executor/summarize_usage.py",
+      "bytes": 1911,
+      "sha256": "dbe2096be099bca8239ba9f9b345a8d7f2b69985f73590ae9e7a20478c26d9af",
+      "source_equals_git_show": true,
+      "copy_equals_git_show_before_edit": true
+    },
+    {
+      "path": "executor/test_executor.py",
+      "bytes": 37153,
+      "sha256": "9904d2907fe54bf4f18a0b961690184c901c499230a3c81df0bcbdf2d824a1c2",
+      "source_equals_git_show": true,
+      "copy_equals_git_show_before_edit": true
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+attempt,annotation,subtasks_completed,duration_s,note
+01,partial_success,1/2,600,"grasp verified; 600 s timeout while lowering; self-report (agent_final.json), operator to verify"
+02,failure,0/2,384,"self-report (agent_final.json), operator to verify"
+03,success,2/2,534,"self-report (agent_final.json), operator to verify"
+04,skip,,0,"gate off at startup; 0 chunks; replaced by 04_retry_01; self-report (agent_final.json), operator to verify"
+04_retry_01,partial_success,1/2,345,"grasp verified; gate-off before placement; self-report (agent_final.json), operator to verify"
+05,failure,0/2,220,"self-report (agent_final.json), operator to verify"

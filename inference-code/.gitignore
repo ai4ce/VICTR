@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+openpi/
+lerobot_env/
+rollout_recordings/
+rollout_logs/
+assets/victr_icl_pool_*/

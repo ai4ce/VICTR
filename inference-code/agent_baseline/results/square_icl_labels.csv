@@ -1,0 +1,7 @@
+attempt,annotation,subtasks_completed,duration_s,note
+01,failure,0/2,219,"self-report (agent_final.json), operator to verify"
+02,partial_success,1/2,338,"grasp verified; IK failure during peg alignment; self-report (agent_final.json), operator to verify"
+03,success,2/2,558,"self-report (agent_final.json), operator to verify"
+04,skip,,53,"invalid setup: square already on peg; 0 chunks; replaced by 04_reset; self-report (agent_final.json), operator to verify"
+04_reset,partial_success,1/2,536,"grasp verified; gate-off during insertion; self-report (agent_final.json), operator to verify"
+05,partial_success,1/2,374,"grasp verified; IK failure at peg alignment; self-report (agent_final.json), operator to verify"

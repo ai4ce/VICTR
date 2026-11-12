@@ -1,0 +1,7 @@
+attempt,annotation,subtasks_completed,duration_s,note
+01,skip,,10,"no camera frames at startup; 0 chunks; replaced by 01_retry1; self-report (agent_final.json), operator to verify"
+01_retry1,failure,0/9,526,"scene: same 9 items as ICL inventory (orange block, yellow-green block, purple eggplant, green pepper, gray elongated item, red chili, yellow elongated item, red-ended marker, blue-ended marker); containers cup left, plate front-center, box right; lenient rule: any container counts; self-report (agent_final.json), operator to verify"
+02,failure,0/9,379,"self-report (agent_final.json), operator to verify"
+03,partial_success,1/9,922,"gray elongated item on plate; gate-off; self-report (agent_final.json), operator to verify"
+04,partial_success,1/9,868,"CORRECTED from self-reported 2/9: gray elongated item was already on the plate at start (leftover from 03, scene not fully reset); only the orange/green block was placed this attempt; self-report (agent_final.json), operator to verify"
+05,failure,0/9,495,"self-report (agent_final.json), operator to verify"

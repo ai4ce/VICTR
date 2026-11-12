@@ -1,0 +1,704 @@
+{
+  "source": "Prior extract.py copied pool raw actions/proprio and images unchanged; no embeddings/values",
+  "fps": 30,
+  "episodes": [
+    {
+      "episode": 241,
+      "sampled_frames": 400,
+      "sampled_duration_s": 13.333333333333334,
+      "arms_with_grasp": [
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.005734697449952364,
+          "p90_moving_m_s": 0.03228969797492021
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.039256177842617035,
+          "p90_moving_m_s": 0.17386395037174224
+        }
+      ],
+      "raw_extraction_sha256": "686c03de1adeb907c70d6d0dde00c305c82a6da2e5bb8752e96f1e03617cfc2a"
+    },
+    {
+      "episode": 242,
+      "sampled_frames": 1380,
+      "sampled_duration_s": 46.0,
+      "arms_with_grasp": [
+        "left",
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.024075962603092194,
+          "p90_moving_m_s": 0.0812443271279335
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.013305735774338245,
+          "p90_moving_m_s": 0.09654153287410737
+        }
+      ],
+      "raw_extraction_sha256": "93134d81e15ae78be206912f1138d20f9cc4de1457686f810b6676e384ed9315"
+    },
+    {
+      "episode": 243,
+      "sampled_frames": 275,
+      "sampled_duration_s": 9.166666666666666,
+      "arms_with_grasp": [
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.006015376653522253,
+          "p90_moving_m_s": 0.03698163479566576
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.059689104557037354,
+          "p90_moving_m_s": 0.2046476349234581
+        }
+      ],
+      "raw_extraction_sha256": "8d416b6bcfd3519423e3b7e410b248e7c05d5a242c465c86df593e6d4ddd0b29"
+    },
+    {
+      "episode": 244,
+      "sampled_frames": 370,
+      "sampled_duration_s": 12.333333333333334,
+      "arms_with_grasp": [
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.013497687876224518,
+          "p90_moving_m_s": 0.03515132702887058
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.05639445409178734,
+          "p90_moving_m_s": 0.1876274570822716
+        }
+      ],
+      "raw_extraction_sha256": "2e3f34d0444deaf4ccd48e523e3cbd3717d9979d48b74c6150792e9f92a25e09"
+    },
+    {
+      "episode": 245,
+      "sampled_frames": 1725,
+      "sampled_duration_s": 57.5,
+      "arms_with_grasp": [
+        "left",
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.015247387811541557,
+          "p90_moving_m_s": 0.08843662217259407
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.032341983169317245,
+          "p90_moving_m_s": 0.11823339164257052
+        }
+      ],
+      "raw_extraction_sha256": "8c6d6c1dafa7c61d295c1c355fa50fcd85d77026f7b2d00528085c64e532e745"
+    },
+    {
+      "episode": 246,
+      "sampled_frames": 680,
+      "sampled_duration_s": 22.666666666666668,
+      "arms_with_grasp": [
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.006742865778505802,
+          "p90_moving_m_s": 0.03574058674275876
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.05241335555911064,
+          "p90_moving_m_s": 0.1731464385986328
+        }
+      ],
+      "raw_extraction_sha256": "44424d4ed16312cc0c6858a6bc7434de28d96042eb1ea3b6a2f23f7acd3482a9"
+    },
+    {
+      "episode": 247,
+      "sampled_frames": 310,
+      "sampled_duration_s": 10.333333333333334,
+      "arms_with_grasp": [
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.0099902069196105,
+          "p90_moving_m_s": 0.04880413040518761
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.06789561361074448,
+          "p90_moving_m_s": 0.27774491906166077
+        }
+      ],
+      "raw_extraction_sha256": "1a90a976b7c3402b3af914f39d6c6ecc28e43d61983508421f3e56c330cfbe4f"
+    },
+    {
+      "episode": 248,
+      "sampled_frames": 385,
+      "sampled_duration_s": 12.833333333333334,
+      "arms_with_grasp": [
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.010825837031006813,
+          "p90_moving_m_s": 0.03829934261739254
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.05611756443977356,
+          "p90_moving_m_s": 0.23729512095451355
+        }
+      ],
+      "raw_extraction_sha256": "71afce054380ae2227bc9231a8d878b3f8d429b758df9006b996b9f060a94ffb"
+    },
+    {
+      "episode": 249,
+      "sampled_frames": 310,
+      "sampled_duration_s": 10.333333333333334,
+      "arms_with_grasp": [
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.00511961430311203,
+          "p90_moving_m_s": 0.029445686563849428
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.07619889080524445,
+          "p90_moving_m_s": 0.2577851653099061
+        }
+      ],
+      "raw_extraction_sha256": "23519e89289b91ab4b56fac61fb3edeb219c2cc2e1cb0ec947fc3ff4dad88f0a"
+    },
+    {
+      "episode": 250,
+      "sampled_frames": 420,
+      "sampled_duration_s": 14.0,
+      "arms_with_grasp": [
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.007471602875739336,
+          "p90_moving_m_s": 0.040578546375036224
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.04926607012748718,
+          "p90_moving_m_s": 0.2591193228960037
+        }
+      ],
+      "raw_extraction_sha256": "5a0a7f24138e4e5d4ff8286da9f0a73a5cd1cd406204cbad3dc274cd96d2b74c"
+    },
+    {
+      "episode": 251,
+      "sampled_frames": 435,
+      "sampled_duration_s": 14.5,
+      "arms_with_grasp": [
+        "left",
+        "right"
+      ],
+      "speeds": [
+        {
+          "arm": "left",
+          "median_moving_m_s": 0.058211326599121094,
+          "p90_moving_m_s": 0.14676134288311005
+        },
+        {
+          "arm": "right",
+          "median_moving_m_s": 0.02986222691833973,
+          "p90_moving_m_s": 0.18882669210433964
+        }
+      ],
+      "raw_extraction_sha256": "4b90a97d7f3d8daadcb5c59c24fc67f567258ce0dc73438f1f91bc66e34ef08c"
+    }
+  ],
+  "segments": [
+    {
+      "episode": 241,
+      "arm": "right",
+      "closing_frame": 99,
+      "grasp_frame": 111,
+      "clearance_frame": 129,
+      "peak_frame": 149,
+      "release_frame": 331,
+      "preclose_s": 3.3,
+      "closing_s": 0.4,
+      "held_s": 7.333333333333333,
+      "lift_40mm_s": 0.6,
+      "grasp_to_peak_s": 1.2666666666666666,
+      "lowering_s": 6.066666666666666,
+      "postrelease_s": 2.3,
+      "grasp_xyz": [
+        0.22915859520435333,
+        -0.4472656846046448,
+        0.29616209864616394
+      ],
+      "approach_z": 0.29867613315582275,
+      "peak_z": 0.38444292545318604,
+      "release_xyz": [
+        0.25670525431632996,
+        -0.3300831913948059,
+        0.34621572494506836
+      ],
+      "lift_m": 0.0882808268070221,
+      "lowering_m": 0.038227200508117676,
+      "transfer_xy_m": 0.12037672102451324,
+      "orientation_change_deg": 21.726863319628166
+    },
+    {
+      "episode": 242,
+      "arm": "left",
+      "closing_frame": 593,
+      "grasp_frame": 605,
+      "clearance_frame": 627,
+      "peak_frame": 1122,
+      "release_frame": 1351,
+      "preclose_s": 19.766666666666666,
+      "closing_s": 0.4,
+      "held_s": 24.866666666666667,
+      "lift_40mm_s": 0.7333333333333333,
+      "grasp_to_peak_s": 17.233333333333334,
+      "lowering_s": 7.633333333333334,
+      "postrelease_s": 0.9666666666666667,
+      "grasp_xyz": [
+        0.21847058832645416,
+        -0.03799263387918472,
+        0.2740510106086731
+      ],
+      "approach_z": 0.27609938383102417,
+      "peak_z": 0.4149337112903595,
+      "release_xyz": [
+        0.29722899198532104,
+        -0.05570245161652565,
+        0.3818964660167694
+      ],
+      "lift_m": 0.1408827006816864,
+      "lowering_m": 0.03303724527359009,
+      "transfer_xy_m": 0.08072499185800552,
+      "orientation_change_deg": 49.432870973922434
+    },
+    {
+      "episode": 242,
+      "arm": "right",
+      "closing_frame": 225,
+      "grasp_frame": 238,
+      "clearance_frame": 260,
+      "peak_frame": 277,
+      "release_frame": 416,
+      "preclose_s": 7.5,
+      "closing_s": 0.43333333333333335,
+      "held_s": 5.933333333333334,
+      "lift_40mm_s": 0.7333333333333333,
+      "grasp_to_peak_s": 1.3,
+      "lowering_s": 4.633333333333334,
+      "postrelease_s": 32.13333333333333,
+      "grasp_xyz": [
+        0.2805342972278595,
+        -0.4634810984134674,
+        0.2917715609073639
+      ],
+      "approach_z": 0.3016737103462219,
+      "peak_z": 0.389415979385376,
+      "release_xyz": [
+        0.2387239933013916,
+        -0.3044162690639496,
+        0.35210084915161133
+      ],
+      "lift_m": 0.09764441847801208,
+      "lowering_m": 0.03731513023376465,
+      "transfer_xy_m": 0.16446799039840698,
+      "orientation_change_deg": 11.473841078447446
+    },
+    {
+      "episode": 243,
+      "arm": "right",
+      "closing_frame": 84,
+      "grasp_frame": 97,
+      "clearance_frame": 110,
+      "peak_frame": 135,
+      "release_frame": 232,
+      "preclose_s": 2.8,
+      "closing_s": 0.43333333333333335,
+      "held_s": 4.5,
+      "lift_40mm_s": 0.43333333333333335,
+      "grasp_to_peak_s": 1.2666666666666666,
+      "lowering_s": 3.2333333333333334,
+      "postrelease_s": 1.4333333333333333,
+      "grasp_xyz": [
+        0.22808973491191864,
+        -0.40143969655036926,
+        0.3031715750694275
+      ],
+      "approach_z": 0.3068278431892395,
+      "peak_z": 0.37136903405189514,
+      "release_xyz": [
+        0.26078012585639954,
+        -0.32507386803627014,
+        0.34637728333473206
+      ],
+      "lift_m": 0.06819745898246765,
+      "lowering_m": 0.024991750717163086,
+      "transfer_xy_m": 0.08306865394115448,
+      "orientation_change_deg": 16.291986597664117
+    },
+    {
+      "episode": 244,
+      "arm": "right",
+      "closing_frame": 195,
+      "grasp_frame": 208,
+      "clearance_frame": 218,
+      "peak_frame": 247,
+      "release_frame": 316,
+      "preclose_s": 6.5,
+      "closing_s": 0.43333333333333335,
+      "held_s": 3.6,
+      "lift_40mm_s": 0.3333333333333333,
+      "grasp_to_peak_s": 1.3,
+      "lowering_s": 2.3,
+      "postrelease_s": 1.8,
+      "grasp_xyz": [
+        0.22391223907470703,
+        -0.4166443943977356,
+        0.2636030614376068
+      ],
+      "approach_z": 0.27418002486228943,
+      "peak_z": 0.3738112151622772,
+      "release_xyz": [
+        0.2520762085914612,
+        -0.3260532319545746,
+        0.3466821014881134
+      ],
+      "lift_m": 0.11020815372467041,
+      "lowering_m": 0.02712911367416382,
+      "transfer_xy_m": 0.09486816078424454,
+      "orientation_change_deg": 36.40738652466112
+    },
+    {
+      "episode": 245,
+      "arm": "left",
+      "closing_frame": 84,
+      "grasp_frame": 97,
+      "clearance_frame": 109,
+      "peak_frame": 471,
+      "release_frame": 597,
+      "preclose_s": 2.8,
+      "closing_s": 0.43333333333333335,
+      "held_s": 16.666666666666668,
+      "lift_40mm_s": 0.4,
+      "grasp_to_peak_s": 12.466666666666667,
+      "lowering_s": 4.2,
+      "postrelease_s": 37.6,
+      "grasp_xyz": [
+        0.2453126162290573,
+        -0.05236004665493965,
+        0.24148420989513397
+      ],
+      "approach_z": 0.2539990544319153,
+      "peak_z": 0.42128026485443115,
+      "release_xyz": [
+        0.3158682584762573,
+        -0.1477433741092682,
+        0.3992443084716797
+      ],
+      "lift_m": 0.17979605495929718,
+      "lowering_m": 0.022035956382751465,
+      "transfer_xy_m": 0.1186426505446434,
+      "orientation_change_deg": 43.86810988354023
+    },
+    {
+      "episode": 245,
+      "arm": "right",
+      "closing_frame": 1352,
+      "grasp_frame": 1364,
+      "clearance_frame": 1385,
+      "peak_frame": 1412,
+      "release_frame": 1641,
+      "preclose_s": 45.06666666666667,
+      "closing_s": 0.4,
+      "held_s": 9.233333333333333,
+      "lift_40mm_s": 0.7,
+      "grasp_to_peak_s": 1.6,
+      "lowering_s": 7.633333333333334,
+      "postrelease_s": 2.8,
+      "grasp_xyz": [
+        0.17718061804771423,
+        -0.432758629322052,
+        0.3376716077327728
+      ],
+      "approach_z": 0.3503829538822174,
+      "peak_z": 0.4321480691432953,
+      "release_xyz": [
+        0.24811586737632751,
+        -0.27208447456359863,
+        0.3754313290119171
+      ],
+      "lift_m": 0.09447646141052246,
+      "lowering_m": 0.056716740131378174,
+      "transfer_xy_m": 0.17563596367835999,
+      "orientation_change_deg": 42.717844988494626
+    },
+    {
+      "episode": 246,
+      "arm": "right",
+      "closing_frame": 174,
+      "grasp_frame": 186,
+      "clearance_frame": 202,
+      "peak_frame": 292,
+      "release_frame": 612,
+      "preclose_s": 5.8,
+      "closing_s": 0.4,
+      "held_s": 14.2,
+      "lift_40mm_s": 0.5333333333333333,
+      "grasp_to_peak_s": 3.533333333333333,
+      "lowering_s": 10.666666666666666,
+      "postrelease_s": 2.2666666666666666,
+      "grasp_xyz": [
+        0.21174484491348267,
+        -0.3228476643562317,
+        0.301984041929245
+      ],
+      "approach_z": 0.30083444714546204,
+      "peak_z": 0.43041515350341797,
+      "release_xyz": [
+        0.23638583719730377,
+        -0.2072763890028,
+        0.40667015314102173
+      ],
+      "lift_m": 0.12843111157417297,
+      "lowering_m": 0.02374500036239624,
+      "transfer_xy_m": 0.11816894263029099,
+      "orientation_change_deg": 32.83257732023626
+    },
+    {
+      "episode": 247,
+      "arm": "right",
+      "closing_frame": 102,
+      "grasp_frame": 115,
+      "clearance_frame": 128,
+      "peak_frame": 194,
+      "release_frame": 250,
+      "preclose_s": 3.4,
+      "closing_s": 0.43333333333333335,
+      "held_s": 4.5,
+      "lift_40mm_s": 0.43333333333333335,
+      "grasp_to_peak_s": 2.6333333333333333,
+      "lowering_s": 1.8666666666666667,
+      "postrelease_s": 2.0,
+      "grasp_xyz": [
+        0.22203397750854492,
+        -0.35489311814308167,
+        0.28994399309158325
+      ],
+      "approach_z": 0.30677545070648193,
+      "peak_z": 0.4172472059726715,
+      "release_xyz": [
+        0.24945615231990814,
+        -0.2464328557252884,
+        0.390280157327652
+      ],
+      "lift_m": 0.12730321288108826,
+      "lowering_m": 0.02696704864501953,
+      "transfer_xy_m": 0.11187316477298737,
+      "orientation_change_deg": 31.54227700766886
+    },
+    {
+      "episode": 248,
+      "arm": "right",
+      "closing_frame": 131,
+      "grasp_frame": 144,
+      "clearance_frame": 158,
+      "peak_frame": 183,
+      "release_frame": 340,
+      "preclose_s": 4.366666666666666,
+      "closing_s": 0.43333333333333335,
+      "held_s": 6.533333333333333,
+      "lift_40mm_s": 0.4666666666666667,
+      "grasp_to_peak_s": 1.3,
+      "lowering_s": 5.233333333333333,
+      "postrelease_s": 1.5,
+      "grasp_xyz": [
+        0.23051010072231293,
+        -0.35673171281814575,
+        0.2951691150665283
+      ],
+      "approach_z": 0.2998233437538147,
+      "peak_z": 0.4031921923160553,
+      "release_xyz": [
+        0.24688497185707092,
+        -0.2694348990917206,
+        0.3887089490890503
+      ],
+      "lift_m": 0.10802307724952698,
+      "lowering_m": 0.014483243227005005,
+      "transfer_xy_m": 0.08881931006908417,
+      "orientation_change_deg": 30.73643094190029
+    },
+    {
+      "episode": 249,
+      "arm": "right",
+      "closing_frame": 131,
+      "grasp_frame": 143,
+      "clearance_frame": 160,
+      "peak_frame": 182,
+      "release_frame": 270,
+      "preclose_s": 4.366666666666666,
+      "closing_s": 0.4,
+      "held_s": 4.233333333333333,
+      "lift_40mm_s": 0.5666666666666667,
+      "grasp_to_peak_s": 1.3,
+      "lowering_s": 2.933333333333333,
+      "postrelease_s": 1.3333333333333333,
+      "grasp_xyz": [
+        0.23872393369674683,
+        -0.38849973678588867,
+        0.28851553797721863
+      ],
+      "approach_z": 0.2928592264652252,
+      "peak_z": 0.3954847455024719,
+      "release_xyz": [
+        0.2375136762857437,
+        -0.2568942904472351,
+        0.37245672941207886
+      ],
+      "lift_m": 0.1069692075252533,
+      "lowering_m": 0.023028016090393066,
+      "transfer_xy_m": 0.13161100447177887,
+      "orientation_change_deg": 26.943876808139336
+    },
+    {
+      "episode": 250,
+      "arm": "right",
+      "closing_frame": 130,
+      "grasp_frame": 143,
+      "clearance_frame": 160,
+      "peak_frame": 283,
+      "release_frame": 373,
+      "preclose_s": 4.333333333333333,
+      "closing_s": 0.43333333333333335,
+      "held_s": 7.666666666666667,
+      "lift_40mm_s": 0.5666666666666667,
+      "grasp_to_peak_s": 4.666666666666667,
+      "lowering_s": 3.0,
+      "postrelease_s": 1.5666666666666667,
+      "grasp_xyz": [
+        0.226107656955719,
+        -0.3629635274410248,
+        0.2877650558948517
+      ],
+      "approach_z": 0.28678667545318604,
+      "peak_z": 0.4086124897003174,
+      "release_xyz": [
+        0.2519763708114624,
+        -0.2411871701478958,
+        0.38468098640441895
+      ],
+      "lift_m": 0.1208474338054657,
+      "lowering_m": 0.023931503295898438,
+      "transfer_xy_m": 0.12449365854263306,
+      "orientation_change_deg": 27.119549998571795
+    },
+    {
+      "episode": 251,
+      "arm": "left",
+      "closing_frame": 25,
+      "grasp_frame": 38,
+      "clearance_frame": null,
+      "peak_frame": 63,
+      "release_frame": 155,
+      "preclose_s": 0.8333333333333334,
+      "closing_s": 0.43333333333333335,
+      "held_s": 3.9,
+      "lift_40mm_s": null,
+      "grasp_to_peak_s": 0.8333333333333334,
+      "lowering_s": 3.066666666666667,
+      "postrelease_s": 9.333333333333334,
+      "grasp_xyz": [
+        0.23973944783210754,
+        0.0653836652636528,
+        0.2817493975162506
+      ],
+      "approach_z": 0.2842433452606201,
+      "peak_z": 0.2855616807937622,
+      "release_xyz": [
+        0.2454800307750702,
+        -0.14141418039798737,
+        0.26821020245552063
+      ],
+      "lift_m": 0.0038122832775115967,
+      "lowering_m": 0.017351478338241577,
+      "transfer_xy_m": 0.20687749981880188,
+      "orientation_change_deg": 13.562728442954365
+    },
+    {
+      "episode": 251,
+      "arm": "right",
+      "closing_frame": 246,
+      "grasp_frame": 258,
+      "clearance_frame": 271,
+      "peak_frame": 300,
+      "release_frame": 374,
+      "preclose_s": 8.2,
+      "closing_s": 0.4,
+      "held_s": 3.8666666666666667,
+      "lift_40mm_s": 0.43333333333333335,
+      "grasp_to_peak_s": 1.4,
+      "lowering_s": 2.466666666666667,
+      "postrelease_s": 2.033333333333333,
+      "grasp_xyz": [
+        0.23631004989147186,
+        -0.42400047183036804,
+        0.3050886392593384
+      ],
+      "approach_z": 0.31460273265838623,
+      "peak_z": 0.3922719955444336,
+      "release_xyz": [
+        0.2201254665851593,
+        -0.358205109834671,
+        0.3711126148700714
+      ],
+      "lift_m": 0.08718335628509521,
+      "lowering_m": 0.021159380674362183,
+      "transfer_xy_m": 0.06775669753551483,
+      "orientation_change_deg": 8.369381096376362
+    }
+  ],
+  "right_segment_medians": {
+    "closing_s": 0.43333333333333335,
+    "held_s": 5.933333333333334,
+    "lift_40mm_s": 0.5333333333333333,
+    "grasp_to_peak_s": 1.3,
+    "lowering_s": 3.2333333333333334,
+    "approach_z": 0.30083444714546204,
+    "peak_z": 0.3954847455024719,
+    "lift_m": 0.1069692075252533,
+    "lowering_m": 0.024991750717163086,
+    "transfer_xy_m": 0.11816894263029099,
+    "orientation_change_deg": 27.119549998571795
+  },
+  "frame_coverage_note": "Each overlapping pool chunk contributed its first five frames; last five-frame tail is absent."
+}

@@ -1,0 +1,86 @@
+{
+  "baseline_commit": "331ea9ad3c4e2e10173179173db0241d372f65a8",
+  "files": [
+    {
+      "path": "executor/client.py",
+      "byte_identical": false,
+      "baseline_sha256": "b44968856bc8e58850376e98602c05b769b69fff06d4d77dd452690fd64b68c0",
+      "zeroshot_sha256": "8dce8fc35a2c24e9ed46dcbca3427b97173be6b5fb5a74547485093733675398",
+      "added_lines": 4,
+      "removed_lines": 13
+    },
+    {
+      "path": "executor/core.py",
+      "byte_identical": false,
+      "baseline_sha256": "c26d3e2a49f1199b99e86caa10bb9f7d3893738b4a025c31e506f5d95429b4ac",
+      "zeroshot_sha256": "504a8ffdeaec5fb8c52f564db67c8f9428b70ca36712c9ea52c3d2b132d5bd00",
+      "added_lines": 1,
+      "removed_lines": 10
+    },
+    {
+      "path": "executor/files.py",
+      "byte_identical": true,
+      "baseline_sha256": "897ac8351ffa1abc85ab7d5320718f22a031ee9f33cd164839100659e3d5b393",
+      "zeroshot_sha256": "897ac8351ffa1abc85ab7d5320718f22a031ee9f33cd164839100659e3d5b393",
+      "added_lines": 0,
+      "removed_lines": 0
+    },
+    {
+      "path": "executor/run_executor.py",
+      "byte_identical": false,
+      "baseline_sha256": "9ba828516bdcbea9d521934f0454a72803152904b9811679bf9756b5cde3c86a",
+      "zeroshot_sha256": "f8a701dd5ca4be60215cd7bb7aa74ef31e47258aff99ab3066ce98ecec92820a",
+      "added_lines": 4,
+      "removed_lines": 5
+    },
+    {
+      "path": "executor/safety.py",
+      "byte_identical": true,
+      "baseline_sha256": "ca98430b06a693f209e2cc0f31b260d6e763b05ef18c9310b089b4f575400f86",
+      "zeroshot_sha256": "ca98430b06a693f209e2cc0f31b260d6e763b05ef18c9310b089b4f575400f86",
+      "added_lines": 0,
+      "removed_lines": 0
+    },
+    {
+      "path": "executor/streams.py",
+      "byte_identical": true,
+      "baseline_sha256": "5b30cdfe41be455b1b482c2782cb51e988fea046eb0aa584c8e88874b7f6e4bb",
+      "zeroshot_sha256": "5b30cdfe41be455b1b482c2782cb51e988fea046eb0aa584c8e88874b7f6e4bb",
+      "added_lines": 0,
+      "removed_lines": 0
+    },
+    {
+      "path": "executor/summarize_usage.py",
+      "byte_identical": true,
+      "baseline_sha256": "dbe2096be099bca8239ba9f9b345a8d7f2b69985f73590ae9e7a20478c26d9af",
+      "zeroshot_sha256": "dbe2096be099bca8239ba9f9b345a8d7f2b69985f73590ae9e7a20478c26d9af",
+      "added_lines": 0,
+      "removed_lines": 0
+    },
+    {
+      "path": "executor/test_executor.py",
+      "byte_identical": false,
+      "baseline_sha256": "9904d2907fe54bf4f18a0b961690184c901c499230a3c81df0bcbdf2d824a1c2",
+      "zeroshot_sha256": "c1eed63fa6ff970c0b584268b0ab46d254b5fe1acd61a551221923dda18572ab",
+      "added_lines": 58,
+      "removed_lines": 53
+    }
+  ],
+  "scheduler_byte_identical": true,
+  "workers_byte_identical": true,
+  "freeze_validation_byte_identical": true,
+  "freeze_root": "Path(__file__).resolve().parents[1] (this zero-shot repository)",
+  "production_demo_dependencies_absent": true,
+  "notes_absent": true,
+  "removed_demo_tests": [
+    "test_demo_reference_validation",
+    "test_submit_counts_demo_text_and_requires_it_each_time"
+  ],
+  "added_tests": [
+    "test_both_arms_keep_35mm_15deg_tracking_before_selection",
+    "test_submission_without_demo_is_accepted_and_counts_only_local_text"
+  ],
+  "test_count": 25,
+  "no_attempt_outputs": true,
+  "review_state": "uncommitted; FROZEN is created only after operator approval"
+}

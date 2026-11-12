@@ -1,0 +1,46 @@
+{
+  "check": "read-only live stream health",
+  "checked_at": 1791592039.5164094,
+  "command_port_5572_free": true,
+  "command_port_owners": [],
+  "port_check_error": null,
+  "publisher_created": false,
+  "command_port_bound": false,
+  "scene_data_saved": false,
+  "passed": true,
+  "state_age_s": 3.5474076867103577e-06,
+  "state_pose_fields_readable": true,
+  "gate_readable": true,
+  "gate_enabled": true,
+  "cameras": {
+    "zed": {
+      "age_s": 0.04844183661043644,
+      "size": [
+        1280,
+        720
+      ]
+    },
+    "fish0": {
+      "age_s": 0.04844183661043644,
+      "size": [
+        640,
+        480
+      ]
+    },
+    "fish1": {
+      "age_s": 0.04844183661043644,
+      "size": [
+        640,
+        480
+      ]
+    },
+    "fish2": {
+      "age_s": 0.04844183661043644,
+      "size": [
+        640,
+        480
+      ]
+    }
+  },
+  "errors": []
+}

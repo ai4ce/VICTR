@@ -1,0 +1,8 @@
+{
+  "timestamp": 1791910419.1107733,
+  "no_bind": true,
+  "no_publish": true,
+  "passed": false,
+  "port_5572_free_before": true,
+  "error": "only SUB sockets allowed"
+}

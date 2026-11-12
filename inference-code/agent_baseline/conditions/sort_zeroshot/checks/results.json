@@ -1,0 +1,22 @@
+{
+  "review_status": "uncommitted; freeze pending operator approval",
+  "baseline_commit": "331ea9ad3c4e2e10173179173db0241d372f65a8",
+  "prompt_sha256": "eae91d8bb737c059fcf1c39c08340ebdbc23d3c14974cc3b2eb220a29efa76b0",
+  "executor_patch_reconstructs_every_file": true,
+  "unit_tests_passed": 25,
+  "unit_test_exit_code": 0,
+  "live_check_passed": true,
+  "live_gate_observed": false,
+  "port_5572_free_before_and_after": true,
+  "live_binds": 0,
+  "live_publishers": 0,
+  "live_commands": 0,
+  "gate_changes_requested": 0,
+  "attempts_run": 0,
+  "practice_runs": 0,
+  "source_repo_clean": true,
+  "prompt_review": "No learned task knowledge; only query/scoring, robot interface, enforced limits, and generic guidance.",
+  "labels_header": "attempt,annotation,subtasks_completed,duration_s,note",
+  "labels_header_source": "PIPELINE.md shared schema; source ICL checkout has no labels.csv",
+  "scene_parity": "Operator must reuse ICL item set, containers and layout for future attempts; no scene reset or inventory inferred during this build."
+}

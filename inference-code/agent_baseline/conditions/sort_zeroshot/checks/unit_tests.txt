@@ -1,0 +1,23 @@
+SORT_OFFLINE_ROOT=/home/lairlab/icl_ws/agent_runs/astra/sort_the_items_into_their_containers_zeroshot/checks/offline/unit_20261013T185520Z_43ca3d4f
+/home/lairlab/icl_ws/openpi/.venv/bin/python -B -m unittest discover -s /home/lairlab/icl_ws/agent_runs/astra/sort_the_items_into_their_containers_zeroshot/executor -p test_executor.py
+Fresh output root did not exist before discovery. Network and publishers are mocked.
+
+.....................abort: offline stream sentinel
+abort: executor repo is not clean
+abort: executor repo is not clean
+abort: FROZEN commit or prompt hash mismatch
+abort: FROZEN commit or prompt hash mismatch
+abort: FROZEN commit or prompt hash mismatch
+.Executor publishing at 30 Hz; holding measured pose until an agent chunk arrives.
+Executor publishing at 30 Hz; holding measured pose until an agent chunk arrives.
+.Executor publishing at 30 Hz; holding measured pose until an agent chunk arrives.
+abort: stream receipt age >2s
+.Executor publishing at 30 Hz; holding measured pose until an agent chunk arrives.
+abort: stream receipt age >2s
+.
+----------------------------------------------------------------------
+Ran 25 tests in 5.984s
+
+OK
+
+Exit status: 0

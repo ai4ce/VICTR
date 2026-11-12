@@ -1,0 +1,592 @@
+--- 125ded1/executor/client.py
++++ ROOT/executor/client.py
+@@ -27,12 +27,13 @@
+     return name
+ 
+ 
+-def build_chunk(snap,phase,reason,seconds,delta=None,goal=None,quat=None,gripper=None,active_arm=None):
+-    locked=snap['executor']['active_arm']
+-    arm=active_arm if active_arm is not None else locked
+-    if arm not in ARMS:raise ValueError('choose --active-arm left or right for the first chunk')
+-    if locked is not None and arm!=locked:raise ValueError('active arm differs from attempt')
++def build_chunk(snap,phase,reason,seconds,delta=None,goal=None,quat=None,gripper=None,active_arm=None,demo_chunks=None):
++    selected=snap['executor']['active_arm']
++    arm=active_arm
++    if arm not in ARMS:raise ValueError('choose --active-arm left or right for every chunk')
+     idle='right' if arm=='left' else 'left'
++    anchor=(snap['executor']['start_anchors'][idle] if selected is None else
++            snap['executor']['idle_anchor'] if selected==arm else snap['state'][idle+'_ee'])
+     start=list(snap['state'][arm+'_ee']);target=start.copy()
+     if delta is not None:target[4:]=[v+d for v,d in zip(start[4:],delta)]
+     if goal is not None:target[4:]=goal
+@@ -43,10 +44,18 @@
+     steps=[]
+     for i in range(n):
+         steps.append({arm+'_ee':interpolate(start,target,(i+1)/n),
+-                      idle+'_ee':snap['executor']['start_anchors'][idle],
++                      idle+'_ee':anchor,
+                       arm+'_gripper':float(gripper),idle+'_gripper':float(commands[idle])})
+     return dict(type='chunk',chunk_id=time.time_ns(),snapshot_id=snap['snapshot_id'],
+-                phase=phase,reason=reason,active_arm=arm,dt=1/30,steps=steps)
++                phase=phase,reason=reason,active_arm=arm,demo_chunks=demo_chunks,dt=1/30,steps=steps)
++
++
++def parse_demo(value):
++    try:
++        ep,frame,how=value.split(':',2)
++        if not how.strip():raise ValueError()
++        return dict(episode=int(ep),start_frame=int(frame),how=how)
++    except ValueError:raise argparse.ArgumentTypeError('demo must be episode:frame:nonempty how')
+ 
+ 
+ def main():
+@@ -57,7 +66,8 @@
+     sub.add_parser('status')
+     s=sub.add_parser('submit');s.add_argument('--snapshot',required=True)
+     s.add_argument('--phase',required=True);s.add_argument('--reason',required=True)
+-    s.add_argument('--active-arm',choices=ARMS,help='required for first chunk; then locked for this attempt')
++    s.add_argument('--active-arm',choices=ARMS,required=True,help='active arm for this chunk; may switch')
++    s.add_argument('--demo',type=parse_demo,action='append',required=True,help='episode:frame:how; repeatable')
+     s.add_argument('--seconds',type=float,required=True)
+     g=s.add_mutually_exclusive_group();g.add_argument('--delta',type=float,nargs=3);g.add_argument('--goal',type=float,nargs=3)
+     s.add_argument('--quat',type=float,nargs=4);s.add_argument('--gripper',type=float)
+@@ -91,9 +101,9 @@
+     elif a.cmd=='submit':
+         if not 1<=a.seconds<=3:raise ValueError('chunks must last 1-3 seconds')
+         if json.loads((out/'meta.json').read_text())['end_time'] is not None:raise ValueError('executor has stopped')
+-        chunk=build_chunk(snapshot(out,a.snapshot),a.phase,a.reason,a.seconds,a.delta,a.goal,a.quat,a.gripper,a.active_arm)
++        chunk=build_chunk(snapshot(out,a.snapshot),a.phase,a.reason,a.seconds,a.delta,a.goal,a.quat,a.gripper,a.active_arm,a.demo)
+         enqueue(out,chunk)
+-        usage(out,add_decisions=1,add_text_chars=len(a.reason)+len(a.phase)+200)
++        usage(out,add_decisions=1,add_text_chars=len(a.reason)+len(a.phase)+len(json.dumps(a.demo))+200)
+         print(json.dumps(dict(chunk_id=chunk['chunk_id'],ack=str(out/'acks'/f'{chunk["chunk_id"]}.json'),steps=len(chunk['steps']))))
+     elif a.cmd=='judge':
+         enqueue(out,dict(type='judgement',kind=a.kind,confirmed=a.confirmed=='yes',reason=a.reason,snapshot_id=a.snapshot))
+--- 125ded1/executor/core.py
++++ ROOT/executor/core.py
+@@ -1,5 +1,6 @@
+ """Chunk scheduling only. All task decisions come from the external agent."""
+ import math
++import copy
+ import time
+ import threading
+ from functools import wraps
+@@ -15,20 +16,30 @@
+     return wrapped
+ 
+ 
+-def validate_chunk(chunk,snapshot,active_arm):
++def validate_chunk(chunk,snapshot,active_arm,demo_index):
+     cid=chunk.get('chunk_id')
+     if type(cid) is not int or cid<0:raise ValueError('chunk_id must be a nonnegative integer')
+     for k in ('phase','reason','snapshot_id'):
+         if not isinstance(chunk.get(k),str) or not chunk[k].strip():raise ValueError('missing '+k)
+     if chunk.get('active_arm') not in ARMS:raise ValueError('active_arm must be left or right')
+-    if active_arm is not None and chunk['active_arm']!=active_arm:raise ValueError('active arm differs from attempt')
+     active_arm=chunk['active_arm']
++    demos=chunk.get('demo_chunks')
++    if not isinstance(demos,list) or not demos:raise ValueError('at least one demo reference required')
++    for demo in demos:
++        if not isinstance(demo,dict):raise ValueError('invalid demo reference')
++        ep,frame,how=demo.get('episode'),demo.get('start_frame'),demo.get('how')
++        if type(ep) is not int or ep not in range(89,100) or str(ep) not in demo_index:
++            raise ValueError('demo episode must be in 89-99')
++        if type(frame) is not int or not 0<=frame<demo_index[str(ep)]:raise ValueError('demo frame outside episode')
++        if not isinstance(how,str) or not how.strip():raise ValueError('demo how must not be empty')
+     if chunk['snapshot_id']!=snapshot['snapshot_id']:raise ValueError('snapshot id mismatch')
+     steps=chunk.get('steps')
+     if not isinstance(steps,list) or not 30<=len(steps)<=90:raise ValueError('30 to 90 steps required (1-3 seconds)')
+     if chunk.get('dt')!=1/30:raise ValueError('dt must be 1/30')
+     idle='right' if active_arm=='left' else 'left'
+-    anchor=snapshot['executor']['start_anchors'][idle]
++    selected=snapshot['executor']['active_arm']
++    anchor=(snapshot['executor']['start_anchors'][idle] if selected is None else
++            snapshot['executor']['idle_anchor'] if selected==active_arm else snapshot['state'][idle+'_ee'])
+     prev={a+'_ee':snapshot['state'][a+'_ee'] for a in ARMS}
+     for step in steps:
+         for arm in ARMS:
+@@ -40,7 +51,7 @@
+                 # The idle anchor can be displaced by normal arm coupling.
+                 if arm!=idle:raise ValueError('predicted step exceeds 5mm or 2 degrees')
+         if math.dist(step[idle+'_ee'][4:],anchor[4:])>.001 or angle(step[idle+'_ee'],anchor)>math.radians(.5):
+-            raise ValueError('idle arm must hold its measured start anchor')
++            raise ValueError('idle arm must hold its measured anchor')
+         prev=step
+     if max(math.dist(s[active_arm+'_ee'][4:],snapshot['state'][active_arm+'_ee'][4:]) for s in steps)>.065:
+         raise ValueError('chunk exceeds 65mm from its observation')
+@@ -71,21 +82,38 @@
+             self.current=None
+ 
+     @synchronized
+-    def accept(self,chunk):
++    def accept(self,chunk,state=None):
+         if chunk['chunk_id']<=self.last_id:
+             self.status(chunk['chunk_id'],'rejected_by_safety',reason='older or duplicate chunk id')
+             return False
+         arm=chunk.get('active_arm')
+         if arm not in ARMS:raise ValueError('active_arm must be left or right')
+-        if self.safety.active is not None and arm!=self.safety.active:
+-            raise ValueError('active arm differs from attempt')
++        previous_arm=self.safety.active
++        if previous_arm is not None and arm!=previous_arm:
++            if state is None:raise ValueError('switch requires current measured state')
++            self.safety.active=arm
++            self.safety.idle=previous_arm
++            self.safety.idle_anchor=list(state[previous_arm+'_ee'])
++            self.log.event('active_arm_switched',previous_arm=previous_arm,active_arm=arm,
++                           idle_arm=previous_arm,idle_anchor=self.safety.idle_anchor,
++                           idle_gripper=(self.grippers[previous_arm] if self.grippers is not None else
++                                         self.safety.initial[previous_arm+'_gripper']),chunk_id=chunk['chunk_id'])
+         if self.safety.active is None:
+             self.safety.active=arm
+             self.safety.idle='right' if arm=='left' else 'left'
++            if self.safety.initial is not None:
++                self.safety.idle_anchor=list(self.safety.initial[self.safety.idle+'_ee'])
+             self.log.event('active_arm_selected',active_arm=arm,idle_arm=self.safety.idle,
+                            chunk_id=chunk['chunk_id'])
+         self.last_id=chunk['chunk_id']
+         self.discard('preempted','newer chunk received')
++        # The helper used its observation; acceptance anchors the idle arm now.
++        # Preserve the exact submitted chunk in the log and normalize only this copy.
++        if self.safety.idle_anchor is not None:
++            chunk=copy.deepcopy(chunk)
++            for step in chunk['steps']:
++                step[self.safety.idle+'_ee']=list(self.safety.idle_anchor)
++                if self.grippers is not None:step[self.safety.idle+'_gripper']=self.grippers[self.safety.idle]
+         self.current=chunk;self.step=0;self.hold=None;self.mode='chunk'
+         if chunk['phase']!=self.phase:
+             self.log.event('phase',previous=self.phase,phase=chunk['phase'],reason=chunk['reason'])
+@@ -141,6 +169,6 @@
+         return dict(mode=self.mode,phase=self.phase,chunk_id=self.current['chunk_id'] if self.current else None,
+                     next_step=self.step,remaining_steps=len(self.current['steps'])-self.step if self.current else 0,
+                     gripper_commands=self.grippers,
+-                    idle_anchor=self.safety.initial[self.safety.idle+'_ee'] if self.safety.initial and self.safety.idle else None,
++                    idle_anchor=self.safety.idle_anchor,
+                     start_anchors={a:self.safety.initial[a+'_ee'] for a in ARMS} if self.safety.initial else None,
+                     active_arm=self.safety.active)
+--- 125ded1/executor/run_executor.py
++++ ROOT/executor/run_executor.py
+@@ -23,7 +23,7 @@
+ 
+ ROOT=Path(__file__).resolve().parents[1]
+ TOPIC=b'inference/bimanual_ee_action'
+-TASK='put the square on the peg'
++TASK='sort the items into their containers'
+ 
+ 
+ def git(*args):
+@@ -79,7 +79,7 @@
+         for t in self.threads:t.join(timeout=2)
+ 
+ 
+-def process_request(data,error,filename,log,streams,scheduler,meta):
++def process_request(data,error,filename,log,streams,scheduler,meta,demo_index):
+     if error or not isinstance(data,dict):
+         scheduler.status(filename,'rejected_by_safety',reason='malformed JSON: '+str(error))
+         return False
+@@ -110,12 +110,17 @@
+         if time.monotonic()-observed['now']>30:raise ValueError('snapshot more than 30s old; read a new one')
+         current=streams.snapshot()
+         if not scheduler.safety.check(current):raise ValueError('stream stale; hold until fresh and resubmit')
+-        validate_chunk(data,observed,scheduler.safety.active)
++        validate_chunk(data,observed,scheduler.safety.active,demo_index)
+         # Do not let a chunk covertly change the idle gripper.
+         idle='right' if data['active_arm']=='left' else 'left'
+-        if any(abs(s[idle+'_gripper']-scheduler.safety.initial[idle+'_gripper'])>.01 for s in data['steps']):
+-            raise ValueError('idle gripper must retain its initial command')
+-        if scheduler.accept(data):
++        grippers=scheduler.grippers or {a:scheduler.safety.initial[a+'_gripper'] for a in ('left','right')}
++        if any(abs(s[idle+'_gripper']-grippers[idle])>.01 for s in data['steps']):
++            raise ValueError('idle gripper must retain its last command')
++        if scheduler.safety.active is not None and data['active_arm']!=scheduler.safety.active:
++            # Validation can take time; anchor a switch to the latest receipt.
++            current=streams.snapshot()
++            if not scheduler.safety.check(current):raise ValueError('stream stale; hold until fresh and resubmit')
++        if scheduler.accept(data,current['state']):
+             if meta['active_arm']!=scheduler.safety.active:
+                 meta['active_arm']=scheduler.safety.active
+                 log.meta(meta)
+@@ -142,7 +147,7 @@
+     log.meta(meta)
+     atomic_json(log.out/'agent_usage.json',dict(started_at=args.agent_started_at or time.time(),
+         wall_time_s=0,tokens=None,credits=None,usage_source='not yet supplied by session accounting',
+-        initial_context_chars=len((ROOT/'attempt_prompt.md').read_text()),
++        initial_context_chars=len((ROOT/'attempt_prompt.md').read_text())+len((ROOT/'notes/demo_analysis.md').read_text()),
+         image_views=0,wall_time_source='agent supplied' if args.agent_started_at else 'executor start proxy'))
+     usage(log.out)
+     streams=workers=pub=scheduler=None
+@@ -160,7 +165,8 @@
+                 git('diff','--name-only',lines[0],'HEAD','--')=='FROZEN'))
+             if not commit_ok or not lines[1].split() or lines[1].split()[0]!=meta['prompt_sha256']:
+                 raise Abort('FROZEN commit or prompt hash mismatch')
+-        safety=Safety(start,timeout=600)
++        demo_index=json.loads((ROOT/'notes/demo_index.json').read_text())
++        safety=Safety(start,timeout=3600)
+         scheduler=Scheduler(safety,log)
+         streams=Streams(log,args.cam_host)
+         waiting=time.monotonic();next_notice=waiting
+@@ -189,7 +195,7 @@
+             for _ in range(10):
+                 try:data,error,name=workers.requests.get_nowait()
+                 except queue.Empty:break
+-                if process_request(data,error,name,log,streams,scheduler,meta):finish=True;break
++                if process_request(data,error,name,log,streams,scheduler,meta,demo_index):finish=True;break
+             if finish:code=0;break
+             with streams.lock:
+                 snap=streams.snapshot()
+--- 125ded1/executor/safety.py
++++ ROOT/executor/safety.py
+@@ -44,10 +44,11 @@
+ 
+ 
+ class Safety:
+-    def __init__(self,start,active_arm=None,timeout=600):
++    def __init__(self,start,active_arm=None,timeout=3600):
+         self.start,self.timeout,self.active=start,timeout,active_arm
+         self.idle=None if active_arm is None else ('right' if active_arm=='left' else 'left')
+         self.initial=None
++        self.idle_anchor=None
+         self.previous=None
+ 
+     def check(self,snap,startup=False):
+@@ -65,7 +66,8 @@
+             if self.initial is None:
+                 self.initial=s
+             if self.idle is not None:
+-                p,anchor=s[self.idle+'_ee'],self.initial[self.idle+'_ee']
++                if self.idle_anchor is None:self.idle_anchor=list(self.initial[self.idle+'_ee'])
++                p,anchor=s[self.idle+'_ee'],self.idle_anchor
+                 if math.dist(p[4:],anchor[4:])>.025 or angle(p,anchor)>math.radians(10):
+                     raise Abort('idle arm drift >25mm or 10deg')
+             if self.previous:
+--- 125ded1/executor/test_executor.py
++++ ROOT/executor/test_executor.py
+@@ -17,13 +17,33 @@
+ from PIL import Image
+ 
+ import client
+-from client import build_chunk,enqueue
+-from core import Scheduler,validate_chunk
++from client import build_chunk as _build_chunk,enqueue
++from core import Scheduler,validate_chunk as _validate_chunk
+ from files import atomic_json,usage
+ from safety import Abort,Safety
+ from streams import Freshness
+ import run_executor
+ from summarize_usage import summarize
++
++
++DEMO_INDEX=json.loads((Path(__file__).resolve().parents[1]/'notes/demo_index.json').read_text())
++DEMOS=[dict(episode=89,start_frame=202,how='synthetic relative lift reference')]
++
++
++def build_chunk(*args,**kwargs):
++    kwargs.setdefault('active_arm','left')
++    kwargs.setdefault('demo_chunks',copy.deepcopy(DEMOS))
++    return _build_chunk(*args,**kwargs)
++
++
++def validate_chunk(chunk,snapshot,active_arm):
++    return _validate_chunk(chunk,snapshot,active_arm,DEMO_INDEX)
++
++
++def fixture_notes(root):
++    (root/'notes').mkdir()
++    (root/'notes/demo_analysis.md').write_text('synthetic demo notes')
++    (root/'notes/demo_index.json').write_text(json.dumps(DEMO_INDEX))
+ 
+ 
+ def state():
+@@ -54,13 +74,116 @@
+ 
+ 
+ class CoreTests(unittest.TestCase):
++    def test_submit_counts_demo_text_and_requires_it_each_time(self):
++        with tempfile.TemporaryDirectory() as td:
++            out=Path(td)
++            for folder in ('inbox','snapshots'):(out/folder).mkdir()
++            atomic_json(out/'meta.json',dict(end_time=None))
++            atomic_json(out/'agent_usage.json',dict(started_at=time.time(),tokens=None))
++            atomic_json(out/'snapshots/snap_000001.json',snap())
++            argv=['client.py','--out',str(out),'submit','--snapshot','snap_000001',
++                  '--active-arm','left','--phase','lift','--reason','observed grasp','--seconds','1']
++            for _ in range(2):
++                with patch('sys.argv',argv+['--demo','89:202:synthetic relative lift reference']),contextlib.redirect_stdout(io.StringIO()):
++                    client.main()
++            result=json.loads((out/'agent_usage.json').read_text())
++            self.assertEqual(result['submitted_decisions'],2)
++            self.assertEqual(result['observed_text_chars'],2*(len('observed grasp')+len('lift')+len(json.dumps(DEMOS))+200))
++            with patch('sys.argv',argv),contextlib.redirect_stderr(io.StringIO()),self.assertRaises(SystemExit):
++                client.main()
++            self.assertEqual(len(list((out/'inbox').glob('*.json'))),2)
++
++    def test_demo_reference_validation(self):
++        for ep,length in DEMO_INDEX.items():
++            for frame in (0,length-1):
++                c=chunk();c['demo_chunks']=[dict(episode=int(ep),start_frame=frame,how='relative geometry')]
++                validate_chunk(c,snap(),None)
++        for bad in (None,[],[None],[dict(episode=88,start_frame=0,how='x')],
++                    [dict(episode=100,start_frame=0,how='x')],
++                    [dict(episode='89',start_frame=0,how='x')],
++                    [dict(episode=89,start_frame=True,how='x')],
++                    [dict(episode=89,start_frame=-1,how='x')],
++                    [dict(episode=89,start_frame=DEMO_INDEX['89'],how='x')],
++                    [dict(episode=89,start_frame=1,how=' ')],
++                    [dict(episode=89,start_frame=1)],
++                    DEMOS+[dict(episode=99,start_frame=DEMO_INDEX['99'],how='x')]):
++            c=chunk();c['demo_chunks']=bad
++            with self.subTest(ref=bad),self.assertRaises(ValueError):validate_chunk(c,snap(),None)
++        c=chunk();del c['demo_chunks']
++        with self.assertRaises(ValueError):validate_chunk(c,snap(),None)
++        self.assertEqual(client.parse_demo('89:1:relative: lift')['how'],'relative: lift')
++
++    def test_deadline_3600(self):
++        safety=Safety(0)
++        self.assertEqual(safety.timeout,3600)
++        for now in (600,3599.999):self.assertTrue(safety.check(snap(now=now)))
++        for now in (3600,3601):
++            with self.assertRaisesRegex(Abort,'hard timeout'):safety.check(snap(now=now))
++
++    def test_switch_reanchors_at_acceptance_and_keeps_gripper(self):
++        for first in ('left','right'):
++            other='right' if first=='left' else 'left'
++            scheduler=Scheduler(Safety(0),Log());scheduler.tick(snap())
++            c=build_chunk(snap(),'grasp','synthetic',1,active_arm=first,gripper=0)
++            scheduler.accept(c)
++            cmd,cid,i,_=scheduler.tick(snap());scheduler.sent(cmd,cid,i)
++            observed=snap();observed['executor']=scheduler.summary()
++            switch=build_chunk(observed,'transfer','synthetic',1,active_arm=other,gripper=.4)
++            measured=state();measured[first+'_ee'][4]+=.030
++            # Simulate the first arm having moved after the agent's observation.
++            scheduler.safety.previous[first+'_ee']=measured[first+'_ee'].copy()
++            scheduler.safety.check(snap(measured))
++            submitted=copy.deepcopy(switch)
++            scheduler.accept(switch,measured)
++            self.assertEqual(switch,submitted)
++            anchor=measured[first+'_ee'].copy()
++            self.assertEqual(scheduler.summary()['idle_anchor'],anchor)
++            self.assertEqual(scheduler.summary()['start_anchors'][first],state()[first+'_ee'])
++            cmd,cid,i,_=scheduler.tick(snap(measured));scheduler.sent(cmd,cid,i)
++            self.assertEqual(cmd[first+'_ee'],anchor)
++            self.assertEqual(cmd[first+'_gripper'],0)
++            self.assertEqual(cmd[other+'_gripper'],.4)
++            scheduler.discard('preempted','synthetic hold')
++            held=scheduler.tick(snap(measured))[0]
++            self.assertEqual(held[first+'_gripper'],0)
++            self.assertEqual(held[other+'_gripper'],.4)
++            drift=copy.deepcopy(measured);drift[first+'_ee'][4]+=.024
++            self.assertTrue(scheduler.safety.check(snap(drift)))
++            drift[first+'_ee'][4]+=.002
++            with self.assertRaisesRegex(Abort,'idle arm drift'):scheduler.safety.check(snap(drift))
++            drift=copy.deepcopy(measured);theta=math.radians(10.1)/2
++            drift[first+'_ee'][:4]=[math.cos(theta),math.sin(theta),0,0]
++            with self.assertRaisesRegex(Abort,'idle arm drift'):scheduler.safety.check(snap(drift))
++
++    def test_switch_request_uses_current_state_and_rejects_idle_gripper_change(self):
++        from streams import Log as DiskLog
++        with tempfile.TemporaryDirectory() as td:
++            log=DiskLog(Path(td)/'out');scheduler=Scheduler(Safety(time.monotonic()),log)
++            observed=snap(now=time.monotonic());scheduler.tick(observed)
++            scheduler.accept(chunk(gripper=0))
++            cmd,cid,i,_=scheduler.tick(observed);scheduler.sent(cmd,cid,i)
++            observed['executor']=scheduler.summary()
++            atomic_json(log.out/'snapshots'/f'{observed["snapshot_id"]}.json',observed)
++            current=copy.deepcopy(observed);current['state']['left_ee'][4]+=.020
++            class Inputs:
++                def snapshot(self):return current
++            meta=dict(active_arm='left')
++            c=build_chunk(observed,'transfer','switch after motion',1,active_arm='right')
++            bad=copy.deepcopy(c);bad['steps'][0]['left_gripper']=1
++            run_executor.process_request(bad,None,'bad.json',log,Inputs(),scheduler,meta,DEMO_INDEX)
++            self.assertEqual(scheduler.safety.active,'left')
++            run_executor.process_request(c,None,'good.json',log,Inputs(),scheduler,meta,DEMO_INDEX)
++            self.assertEqual(scheduler.safety.active,'right')
++            self.assertEqual(scheduler.safety.idle_anchor,current['state']['left_ee'])
++            self.assertTrue(all(s['left_gripper']==0 for s in scheduler.current['steps']))
++
+     def test_required_metadata_and_arm_selection(self):
+         for field in ('phase','reason','snapshot_id','active_arm'):
+             c=chunk();del c[field]
+             with self.subTest(field=field),self.assertRaises(ValueError):validate_chunk(c,snap(),None)
+         c=chunk();c['active_arm']='neither'
+         with self.assertRaises(ValueError):validate_chunk(c,snap(),None)
+-        self.assertNotIn('demo_chunks',chunk())
++        self.assertEqual(chunk()['demo_chunks'],DEMOS)
+ 
+     def test_unselected_summary_and_start_pose_hold(self):
+         scheduler=Scheduler(Safety(0),Log())
+@@ -76,26 +199,30 @@
+         cmd,_,_,_=scheduler.tick(snap(drift))
+         for arm in ('left','right'):self.assertEqual(cmd[arm+'_ee'],original[arm+'_ee'])
+ 
+-    def test_arm_lock_both_choices_and_duplicate_does_not_preempt(self):
++    def test_arm_switch_both_choices_and_duplicate_does_not_preempt(self):
+         for arm in ('left','right'):
+             with self.subTest(arm=arm):
+                 log=Log();scheduler=Scheduler(Safety(0),log);scheduler.tick(snap())
+                 obs=snap();obs['executor']=scheduler.summary()
+                 with self.assertRaisesRegex(ValueError,'choose --active-arm'):
+-                    build_chunk(obs,'approach','synthetic observation',1)
++                    _build_chunk(obs,'approach','synthetic observation',1)
+                 c=build_chunk(obs,'approach','synthetic observation',1,active_arm=arm);c['chunk_id']=1
+                 validate_chunk(c,obs,None);self.assertTrue(scheduler.accept(c))
+                 self.assertEqual(scheduler.safety.active,arm)
+                 self.assertEqual(scheduler.summary()['idle_anchor'],state()[scheduler.safety.idle+'_ee'])
+-                self.assertFalse(scheduler.accept(c));self.assertIs(scheduler.current,c)
+-                other=copy.deepcopy(c);other['chunk_id']=2;other['active_arm']=scheduler.safety.idle
+-                with self.assertRaisesRegex(ValueError,'differs'):scheduler.accept(other)
+-                with self.assertRaisesRegex(ValueError,'differs'):validate_chunk(other,obs,arm)
++                accepted=scheduler.current
++                self.assertFalse(scheduler.accept(c));self.assertIs(scheduler.current,accepted)
++                other=scheduler.safety.idle
+                 obs['executor']=scheduler.summary()
+-                with self.assertRaisesRegex(ValueError,'differs'):
+-                    build_chunk(obs,'approach','synthetic observation',1,active_arm=other['active_arm'])
+-                self.assertEqual(build_chunk(obs,'approach','synthetic observation',1)['active_arm'],arm)
++                switch=build_chunk(obs,'transfer','synthetic switch',1,active_arm=other);switch['chunk_id']=2
++                validate_chunk(switch,obs,arm)
++                self.assertTrue(scheduler.accept(switch,state()))
++                self.assertEqual(scheduler.safety.active,other)
++                self.assertEqual(log.acks[1]['status'],'preempted')
+                 self.assertEqual(sum(e=='active_arm_selected' for e,_ in log.events),1)
++                self.assertEqual(sum(e=='active_arm_switched' for e,_ in log.events),1)
++                self.assertFalse(scheduler.accept(c,state()))
++                self.assertEqual(scheduler.safety.active,other)
+ 
+     def test_idle_drift_uses_original_anchor_for_either_choice(self):
+         for arm in ('left','right'):
+@@ -132,7 +259,7 @@
+                 if change=='id':c['chunk_id']=-1
+                 if change=='dt':c['dt']=.1
+                 if change=='limit':c=build_chunk(obs,'approach','synthetic observation',3,delta=(.066,0,0),active_arm='right')
+-                run_executor.process_request(c,None,'test.json',log,Inputs(),scheduler,meta)
++                run_executor.process_request(c,None,'test.json',log,Inputs(),scheduler,meta,DEMO_INDEX)
+                 with self.subTest(change=change):
+                     self.assertIsNone(scheduler.safety.active);self.assertIsNone(scheduler.current)
+                     self.assertIsNone(meta['active_arm'])
+@@ -147,7 +274,7 @@
+             if change=='nan':c['steps'][0]['left_ee'][0]=float('nan')
+             if change=='workspace':c['steps'][-1]['left_ee'][6]=.1
+             if change=='idle':c['steps'][-1]['right_ee'][5]+=.01
+-            if change=='arm':c['active_arm']='right'
++            if change=='arm':c['active_arm']='invalid'
+             if change=='step':c['steps'][0]['left_ee'][4]+=.03
+             if change=='duration':c['steps']=c['steps'][:3]
+             with self.subTest(change=change),self.assertRaises((ValueError,Abort)):
+@@ -209,7 +336,7 @@
+         with self.assertRaisesRegex(Abort,'idle'):safety.check(snap(s))
+         safety=Safety(0);safety.previous=state();s=state();s['left_ee'][4]+=.036
+         with self.assertRaisesRegex(Abort,'tracking'):safety.check(snap(s))
+-        with self.assertRaisesRegex(Abort,'timeout'):Safety(0).check(snap(now=600))
++        with self.assertRaisesRegex(Abort,'timeout'):Safety(0).check(snap(now=3600))
+ 
+     def test_usage_estimate_is_labelled_and_actual_separate(self):
+         with tempfile.TemporaryDirectory() as td:
+@@ -240,7 +367,7 @@
+ class FreezeTests(unittest.TestCase):
+     def test_two_commit_freeze_and_integrity_rejections(self):
+         import hashlib
+-        # Temporary fixture commits only; never commit the ZS working repository here.
++        # Temporary fixture commits only; never commit the sort working repository here.
+         with tempfile.TemporaryDirectory() as td:
+             root=Path(td)
+             def git(*args):
+@@ -248,7 +375,7 @@
+                     '-c','user.email=offline@example.invalid','-c','core.hooksPath=/dev/null',*args],
+                     text=True,stderr=subprocess.DEVNULL).strip()
+             git('init','-q');(root/'.gitignore').write_text('/eval/\n')
+-            prompt=root/'attempt_prompt.md';prompt.write_text('synthetic prompt')
++            prompt=root/'attempt_prompt.md';prompt.write_text('synthetic prompt');fixture_notes(root)
+             git('add','.');git('commit','-qm','fixture code and prompt')
+             base=git('rev-parse','HEAD');digest=hashlib.sha256(prompt.read_bytes()).hexdigest()
+             (root/'FROZEN').write_text(base+'\n'+digest+'  attempt_prompt.md\n')
+@@ -261,7 +388,7 @@
+                 meta=json.loads((out/'meta.json').read_text())
+                 self.assertIn(expected,meta['exit_reason']);self.assertIsNotNone(meta['end_time'])
+                 u=json.loads((out/'agent_usage.json').read_text())
+-                self.assertEqual(u['initial_context_chars'],len(prompt.read_text()))
++                self.assertEqual(u['initial_context_chars'],len(prompt.read_text())+len('synthetic demo notes'))
+             check('valid','offline stream sentinel',starts=True)
+             prompt.write_text('dirty prompt');check('dirty','repo is not clean')
+             prompt.write_text('synthetic prompt')
+@@ -283,8 +410,8 @@
+     """Real main loop, file workers and helper; no network sockets or robot inputs."""
+     def run_case(self,arm,stale=None):
+         with tempfile.TemporaryDirectory() as td:
+-            root=Path(td);(root/'attempt_prompt.md').write_text('test prompt')
+-            saved=os.environ.get('ZS_OFFLINE_ROOT')
++            root=Path(td);(root/'attempt_prompt.md').write_text('test prompt');fixture_notes(root)
++            saved=os.environ.get('SORT_OFFLINE_ROOT')
+             out=(Path(saved)/f'{arm}_{stale or "finish"}') if saved else root/'attempt'
+             messages=[];current=state();errors=[];ages=dict(state=0,camera=0);ids={}
+             closed=[];bound=[];observations={}
+@@ -323,6 +450,7 @@
+                 return [json.loads(x) for x in text.splitlines(keepends=True) if x.endswith('\n')]
+             def helper(*args):
+                 output=io.StringIO()
++                if args[0]=='submit':args=(*args,'--demo','89:202:synthetic relative lift reference')
+                 with patch('sys.argv',['client.py','--out',str(out),*args]),contextlib.redirect_stdout(output):
+                     client.main()
+                 return output.getvalue()
+@@ -346,17 +474,18 @@
+                         '--delta','.01','0','0','--gripper','0'))
+                     ids['first']=first['chunk_id'];wait_for(lambda:ack(ids['first'],'running'))
+                     self.assertEqual(json.loads((out/'meta.json').read_text())['active_arm'],arm)
+-                    # Exercise executor rejection, even if a caller bypasses the helper's arm check.
++                    # Invalid demo references must not pre-empt the running chunk.
+                     obs=json.loads((out/'snapshots'/f'{sid}.json').read_text())
+                     other='right' if arm=='left' else 'left'
+-                    bad=build_chunk(obs,'approach','synthetic wrong arm',1,active_arm=other)
++                    bad=build_chunk(obs,'approach','synthetic invalid demo',1,active_arm=other)
++                    bad['demo_chunks'][0]['episode']=88
+                     ids['wrong']=bad['chunk_id'];enqueue(out,bad)
+                     wait_for(lambda:ack(ids['wrong'],'rejected_by_safety'))
+                     self.assertTrue(ack(ids['first'],'running'))
+                     wait_for(lambda:json.loads((out/'latest.json').read_text())['executor']['active_arm']==arm)
+                     obs=json.loads(helper('snapshot','--camera','fish0','fish1'))
+                     second=json.loads(helper('submit','--snapshot',obs['snapshot_id'],
+-                        '--phase','grasp','--reason','synthetic replacement','--seconds','1',
++                        '--active-arm',other,'--phase','grasp','--reason','synthetic replacement and switch','--seconds','1',
+                         '--delta','.002','0','0','--gripper','0'))
+                     ids['second']=second['chunk_id'];wait_for(lambda:ack(ids['second'],'running'))
+                     self.assertTrue(ack(ids['first'],'preempted'))
+@@ -386,10 +515,11 @@
+                     errors.append(repr(e))
+                     if (out/'inbox').exists():enqueue(out,dict(type='finish',outcome='failure',reason='offline test error'))
+             argv=['run_executor.py','--out',str(out)]
+-            with patch.object(run_executor,'ROOT',root),patch.object(run_executor,'git',side_effect=lambda *a:'testcommit' if a[0]=='rev-parse' else ''),patch.object(run_executor,'Streams',Inputs),patch.object(run_executor.zmq.Context,'instance',return_value=Context()),patch('sys.argv',argv):
++            with patch.object(run_executor,'ROOT',root),patch.object(run_executor,'git',side_effect=lambda *a:'testcommit' if a[0]=='rev-parse' else ''),patch.object(run_executor,'Streams',Inputs),patch.object(run_executor,'Safety',wraps=Safety) as safety_factory,patch.object(run_executor.zmq.Context,'instance',return_value=Context()),patch('sys.argv',argv):
+                 t=threading.Thread(target=agent,daemon=True);t.start()
+                 self.assertEqual(run_executor.main(),1 if stale else 0)
+                 t.join(7)
++            self.assertEqual(safety_factory.call_args.kwargs['timeout'],3600)
+             self.assertFalse(t.is_alive());self.assertEqual(errors,[])
+             self.assertEqual(bound,['tcp://0.0.0.0:5572']);self.assertEqual(closed,[True])
+             self.assertTrue(ack(ids['wrong'],'rejected_by_safety'))
+@@ -401,19 +531,23 @@
+                 self.assertEqual(wire[0],b'inference/bimanual_ee_action')
+             submitted=[x['submission'] for x in rows('chunks') if x['record_type']=='submitted']
+             self.assertEqual([len(x['steps']) for x in submitted],[90,30,30])
+-            self.assertTrue(all('demo_chunks' not in x for x in submitted))
++            self.assertTrue(all(x['demo_chunks'] for x in submitted))
+             events=rows('events');choices=[e for e in events if e.get('event')=='active_arm_selected']
+             self.assertEqual(len(choices),1);self.assertEqual(choices[0]['active_arm'],arm)
++            switches=[e for e in events if e.get('event')=='active_arm_switched']
++            self.assertEqual(len(switches),1);self.assertEqual(switches[0]['previous_arm'],arm)
++            self.assertEqual(switches[0]['idle_gripper'],0)
+             self.assertTrue(rows('state'));self.assertTrue(list((out/'snapshots').glob('*.json')))
+             for cam in ('zed','fish0','fish1'):
+                 files=list((out/'frames').glob(f'*_{cam}.jpg'));self.assertTrue(files)
+                 with Image.open(files[0]) as im:self.assertEqual(max(im.size),320)
+             meta=json.loads((out/'meta.json').read_text());self.assertIsNotNone(meta['end_time'])
+-            self.assertEqual(meta['active_arm'],arm)
++            self.assertEqual(meta['task'],'sort the items into their containers')
++            self.assertEqual(meta['active_arm'],'right' if arm=='left' else 'left')
+             if stale:self.assertIn('receipt age >2s',meta['exit_reason'])
+             else:self.assertTrue(any(e.get('event')=='agent_judgement' for e in events))
+             usage_data=json.loads((out/'agent_usage.json').read_text())
+-            self.assertEqual(usage_data['initial_context_chars'],len('test prompt'))
++            self.assertEqual(usage_data['initial_context_chars'],len('test prompt')+len('synthetic demo notes'))
+             self.assertEqual(usage_data['submitted_decisions'],2);self.assertEqual(usage_data['image_views'],3)
+             self.assertIsNone(usage_data['tokens']);self.assertIn('ended_at',usage_data)
+             self.assertTrue((out/'agent_final.json').exists())

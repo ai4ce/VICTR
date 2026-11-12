@@ -1,0 +1,239 @@
+{
+  "_doc": "Per-task subtask plans for partial_success annotation in inference.py. A partial success is recorded as the number of subtasks completed, in order, before the attempt failed; completing every subtask is a plain success. Plans derived from Hannibal52Barca/icl-sarm-annotations (VLM subtask annotations): the modal plan among completed episodes, trailing periods stripped. Entries marked 'normalized' or 'derived' were hand-built because the annotations were too inconsistent or missing -- see each entry's note. Matching is on the lowercased, whitespace-collapsed query against 'task' and 'aliases'. Edits take effect on the next attempt without restarting the UI.",
+  "source": "Hannibal52Barca/icl-sarm-annotations",
+  "tasks": [
+    {
+      "task": "clean the plate",
+      "domain": "in_domain",
+      "dataset": "icl-dataset",
+      "aliases": [],
+      "subtasks": [
+        "Grasp the yellow cloth",
+        "Place the yellow cloth onto the plate",
+        "Tilt the gripper to wipe the plate",
+        "Place the yellow cloth back onto the table"
+      ],
+      "provenance": "modal plan, 22 of 96 completed episodes"
+    },
+    {
+      "task": "hit the yellow cube with the mallet using the left arm",
+      "domain": "in_domain",
+      "dataset": "icl-dataset",
+      "aliases": [
+        "hit the yellow cube with the left arm"
+      ],
+      "subtasks": [
+        "Grasp the mallet",
+        "Hit the yellow cube with the mallet"
+      ],
+      "provenance": "modal plan, 25 of 72 completed episodes"
+    },
+    {
+      "task": "pass the red chilli from the left arm to the right arm",
+      "domain": "in_domain",
+      "dataset": "icl-dataset",
+      "aliases": [],
+      "subtasks": [
+        "Grasp the red chilli",
+        "Place the red chilli onto the right arm"
+      ],
+      "provenance": "modal plan, 40 of 56 completed episodes"
+    },
+    {
+      "task": "pick up the eggplant and place it on the plate with the left arm",
+      "domain": "in_domain",
+      "dataset": "icl-dataset",
+      "aliases": [],
+      "subtasks": [
+        "Grasp the eggplant",
+        "Place the eggplant onto the plate"
+      ],
+      "provenance": "modal plan, 41 of 55 completed episodes"
+    },
+    {
+      "task": "place the red chilli in the cup with the right arm",
+      "domain": "in_domain",
+      "dataset": "icl-dataset",
+      "aliases": [
+        "place the red chilli in the cup"
+      ],
+      "subtasks": [
+        "Grasp the red chilli",
+        "Place the red chilli into the cup"
+      ],
+      "provenance": "modal plan, 43 of 54 completed episodes of 'place the red chilli in the cup'",
+      "note": "icl-dataset has no task literally named '...with the right arm'; it has 'place the red chilli in the cup' (no arm) and a separate '...with the left arm' variant. The arm-less one is taken to be the right-arm task. Both variants have the identical plan."
+    },
+    {
+      "task": "put the circle on the peg",
+      "domain": "in_domain",
+      "dataset": "icl-dataset",
+      "aliases": [],
+      "subtasks": [
+        "Grasp the white circular object",
+        "Place the white circular object onto the white peg"
+      ],
+      "provenance": "modal plan, 125 of 289 completed episodes"
+    },
+    {
+      "task": "put the eggplant into the box with the left arm",
+      "domain": "in_domain",
+      "dataset": "icl-dataset",
+      "aliases": [
+        "put the eggplant in the box with the left arm"
+      ],
+      "subtasks": [
+        "Grasp the eggplant",
+        "Place the eggplant into the box"
+      ],
+      "provenance": "modal plan, 32 of 43 completed episodes"
+    },
+    {
+      "task": "uncap the blue marker",
+      "domain": "in_domain",
+      "dataset": "icl-dataset",
+      "aliases": [],
+      "subtasks": [
+        "Grasp the blue marker",
+        "Tilt the gripper to uncap the blue marker"
+      ],
+      "provenance": "modal plan, 67 of 111 completed episodes"
+    },
+    {
+      "task": "stack the three cubes into a tower",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [
+        "3 cube stack",
+        "three cube stack"
+      ],
+      "subtasks": [
+        "Grasp the second cube",
+        "Place the second cube onto the first cube",
+        "Grasp the third cube",
+        "Place the third cube onto the second cube"
+      ],
+      "provenance": "normalized",
+      "note": "VLM plans were inconsistent (8 distinct plans in 10 episodes, several listing only grasps) and the colour order varies per episode, so the steps are colour-agnostic. Assumes the first cube starts on the table."
+    },
+    {
+      "task": "put the square on the peg",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [
+        "square on peg"
+      ],
+      "subtasks": [
+        "Grasp the square",
+        "Place the square onto the peg"
+      ],
+      "provenance": "modal plan, 6 of 11 completed episodes"
+    },
+    {
+      "task": "stack the cubes and hit them with the mallet",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [
+        "stack one cube in the box and hit it with the mallet"
+      ],
+      "subtasks": [
+        "Grasp the cube",
+        "Place the cube into the box",
+        "Grasp the mallet",
+        "Hit the cube with the mallet"
+      ],
+      "provenance": "normalized",
+      "note": "icl-demo-dataset's task is 'stack the cubes and hit them with the mallet' (plural; its episodes grasp 2-4 cubes), while the requested name says one cube. Built from the annotation vocabulary ('Place the orange cube into the cardboard box', 'Grasp the mallet') for a single cube; the plans themselves never ground the hit step."
+    },
+    {
+      "task": "hit the eggplant with the mallet",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [
+        "hit the eggplant"
+      ],
+      "subtasks": [
+        "Grasp the mallet",
+        "Move the mallet towards the eggplant",
+        "Hit the eggplant with the mallet"
+      ],
+      "provenance": "most complete plan (2 of 11 episodes; 9 distinct plans)"
+    },
+    {
+      "task": "sort the items into their containers",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [
+        "long horizon sorting task"
+      ],
+      "subtasks": [
+        "Sort item 1",
+        "Sort item 2",
+        "Sort item 3",
+        "Sort item 4",
+        "Sort item 5",
+        "Sort item 6",
+        "Sort item 7",
+        "Sort item 8",
+        "Sort item 9"
+      ],
+      "provenance": "derived",
+      "note": "Per-object plans name different objects every episode (6-9 objects, median 8), so progress is counted rather than named. Success means every item is sorted however many the scene has; the last button reached is items sorted before failing. 'long horizon sorting task' is mapped here rather than to 'sort the food items into the cups' (3-6 objects), as this is the longer one."
+    },
+    {
+      "task": "sort the food items into the cups",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [],
+      "subtasks": [
+        "Sort item 1",
+        "Sort item 2",
+        "Sort item 3",
+        "Sort item 4",
+        "Sort item 5",
+        "Sort item 6"
+      ],
+      "provenance": "derived",
+      "note": "Included because it is the other sorting task in icl-demo-dataset. Per-object plans vary by episode (3-6 objects, median 4), so progress is counted rather than named."
+    },
+    {
+      "task": "pass the mustard to the plate",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [
+        "pass mustard to plate"
+      ],
+      "subtasks": [
+        "Grasp the mustard bottle",
+        "Place the mustard bottle onto the white plate"
+      ],
+      "provenance": "modal plan, 8 of 12 completed episodes"
+    },
+    {
+      "task": "uncap the black marker",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [
+        "uncap black marker"
+      ],
+      "subtasks": [
+        "Grasp the black marker from the white plate",
+        "Tilt the gripper to uncap the black marker"
+      ],
+      "provenance": "modal plan, 6 of 8 completed episodes"
+    },
+    {
+      "task": "put the mustard into the box",
+      "domain": "out_of_domain",
+      "dataset": "icl-demo-dataset",
+      "aliases": [
+        "pick up the mustard and place it on the plate"
+      ],
+      "subtasks": [
+        "Grasp the mustard bottle",
+        "Place the mustard bottle into the cardboard box"
+      ],
+      "provenance": "modal plan, 10 of 11 completed episodes"
+    }
+  ]
+}

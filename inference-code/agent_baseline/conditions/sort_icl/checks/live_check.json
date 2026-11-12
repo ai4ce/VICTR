@@ -1,0 +1,27 @@
+{
+  "timestamp": 1791910612.0784414,
+  "no_bind": true,
+  "no_publish": true,
+  "passed": true,
+  "port_5572_free_before": true,
+  "gate_readable": true,
+  "gate_enabled": false,
+  "state_readable": true,
+  "state_age_s": 1.3584998669102788e-05,
+  "camera_age_s": 0.03212581799016334,
+  "camera_sizes": {
+    "zed": [
+      1280,
+      720
+    ],
+    "fish0": [
+      640,
+      480
+    ],
+    "fish1": [
+      640,
+      480
+    ]
+  },
+  "port_5572_free_after": true
+}
