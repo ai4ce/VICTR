@@ -12,34 +12,6 @@ This directory contains two things:
   prompts and labels from running a coding agent as the policy on the same
   robot and tasks.
 
-## System overview
-
-```
- Orin (cameras)                     Workstation (GPU)                               Pi (robot)
- ┌──────────────────┐  JPEG bundle  ┌──────────────────────────────────┐ EE poses    ┌────────────────────────┐
- │deploy_observer.py│─────:5549────▶│ inference_server_openpi.py       │──:5572────▶│joystick_policy_teleop.py│
- │camera_proxy.py   │─────:5550────▶│  ├─ YorInputs (yor_policy)       │            │  └─ yor.py IK → arms    │
- └──────────────────┘               │  ├─ retrieval (yor_retrieval)    │◀─:5568─────│  robot state           │
-                                    │  │    ├─ IC-VFE worker (yor_vfe) │            └────────────────────────┘
-                                    │  │    └─ Robometer (yor_value)   │
-                                    │  └─ pi0.5 / Pi0Victr (pi0_victr) │
-                                    │ inference.py UI :8090 ──task :5573│
-                                    └──────────────────────────────────┘
-```
-
-The server publishes end-effector targets. Inverse kinematics run on the Pi.
-A joystick interlock on the Pi must be held for any command to reach the arms.
-
-## Policies
-
-| Policy | openpi config | Retrieval | Notes |
-| --- | --- | --- | --- |
-| VICTR-value | `yor_icl_victr_value_canonical_ctx3cam_serve` | DINOv2 + progress value | main model; value from IC-VFE, Robometer, Robometer-FT or RECAP |
-| VICTR-vision | `yor_icl_victr_vision_canonical_ctx3cam_serve` | DINOv2 only | |
-| VICTR-vision-value | `yor_icl_victr_vision_value_canonical_ctx3cam_serve` | DINOv2 + value | |
-| RICL-pi0.5 | `yor_icl_victr_vision_interp_canonical_ctx3cam_serve` | DINOv2 + action interpolation | RICL baseline on pi0.5 |
-| pi0.5 baseline | `yor_icl_pi05_canonical_warmstart_baseline` | none | no context |
-
 ## Installation
 
 The pieces run in three Python environments:
