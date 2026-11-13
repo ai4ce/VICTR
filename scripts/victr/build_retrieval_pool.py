@@ -2,12 +2,12 @@
 oracle key values) once, so all 3 training arms (vision/value/vision+value) and the
 offline held-out eval reuse it instead of re-embedding the pool per run.
 
-Splits (train/pool/test, 85/10/5 per task -- see viktr.data.icl_dataset.build_splits)
+Splits (train/pool/test, 85/10/5 per task -- see victr.data.icl_dataset.build_splits)
 are generated once here and written alongside the pool, since training and eval must
 both read the exact same split.
 
 Usage:
-    uv run python scripts/build_retrieval_pool.py \
+    uv run python scripts/victr/build_retrieval_pool.py \
         --out-dir outputs/victr/icl_pool --seed 42
 """
 
@@ -18,7 +18,7 @@ import gc
 import json
 from pathlib import Path
 
-from viktr.data.icl_dataset import (
+from victr.data.icl_dataset import (
     CONTEXT_CHUNK_SIZE,
     DEFAULT_ROOT,
     PRIMARY_CAMERA,
@@ -30,8 +30,8 @@ from viktr.data.icl_dataset import (
     save_splits,
     task_slug,
 )
-from viktr.retrieval.chunk_dictionary import build_chunk_dictionary, save_pool
-from viktr.retrieval.embeddings import load_dinov2
+from victr.retrieval.chunk_dictionary import build_chunk_dictionary, save_pool
+from victr.retrieval.embeddings import load_dinov2
 
 
 def main() -> None:
@@ -49,8 +49,8 @@ def main() -> None:
         choices=["default", "all", "expanded"],
         default="default",
         help="'default': the 4-task pnp subset (TASKS). 'all': every task in the full "
-        "icl-dataset (viktr.data.icl_dataset.all_tasks()). 'expanded': all_tasks() minus "
-        "gears/notebook/grocery-bag/octagon (viktr.data.icl_dataset.expanded_tasks()).",
+        "icl-dataset (victr.data.icl_dataset.all_tasks()). 'expanded': all_tasks() minus "
+        "gears/notebook/grocery-bag/octagon (victr.data.icl_dataset.expanded_tasks()).",
     )
     parser.add_argument(
         "--only-task",
@@ -85,7 +85,7 @@ def main() -> None:
     # All successful episodes per task (train+pool+test combined), matching how
     # assets/yor_icl_pi05_easy_pnp_v2_episodes.json already generalizes the 4-task
     # subset's query set -- consumed by scripts/precompute_retrieval_context.py to
-    # enumerate every query frame without needing viktr importable in openpi's venv
+    # enumerate every query frame without needing victr importable in openpi's venv
     # (same cross-venv-via-static-JSON convention training/config.py already uses).
     all_episodes = {task: sorted(s["train"] + s["pool"] + s["test"]) for task, s in splits.items()}
     all_episodes_path = args.out_dir / "all_episodes.json"

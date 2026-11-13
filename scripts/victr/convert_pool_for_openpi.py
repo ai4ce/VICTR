@@ -1,13 +1,13 @@
-"""One-off converter: re-pickles outputs/victr/icl_pool/*.pkl (viktr.retrieval.
+"""One-off converter: re-pickles outputs/victr/icl_pool/*.pkl (victr.retrieval.
 chunk_dictionary.Chunk/ChunkDictionary instances) as plain dicts/lists of numpy
 arrays, so openpi's vendored pool loader (third_party/openpi/src/openpi/policies/
-yor_retrieval.py) can unpickle them without importing `viktr` -- openpi is a
+yor_retrieval.py) can unpickle them without importing `victr` -- openpi is a
 separate uv workspace/venv, and pickle resolves classes by their original module
-path, so a pool pickled with viktr's own Chunk/ChunkDictionary classes fails to
-load from any environment that doesn't have `viktr` importable.
+path, so a pool pickled with victr's own Chunk/ChunkDictionary classes fails to
+load from any environment that doesn't have `victr` importable.
 
-Run once, from viktr's own venv (where the original pool loads normally):
-    uv run python scripts/convert_pool_for_openpi.py \
+Run once, from victr's own venv (where the original pool loads normally):
+    uv run python scripts/victr/convert_pool_for_openpi.py \
         --pool-dir outputs/victr/icl_pool \
         --out-dir third_party/openpi/assets/victr_icl_pool
 """
@@ -18,8 +18,8 @@ import argparse
 import pickle
 from pathlib import Path
 
-from viktr.data.icl_dataset import DEFAULT_ROOT, TASKS, all_tasks, expanded_tasks, task_slug
-from viktr.retrieval.chunk_dictionary import load_pool
+from victr.data.icl_dataset import DEFAULT_ROOT, TASKS, all_tasks, expanded_tasks, task_slug
+from victr.retrieval.chunk_dictionary import load_pool
 
 
 def main() -> None:

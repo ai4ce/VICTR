@@ -27,7 +27,7 @@ the data-preparation utilities used to build the retrieval pools.
 | `third_party/openpi/src/openpi/training/config.py` | training configs (see below) |
 | `third_party/openpi/scripts/precompute_retrieval_context.py` | offline retrieval for every training frame |
 | `shells/` | entry points: `download_data.sh`, `precompute_context.sh`, `train.sh` |
-| `scripts/`, `src/viktr/` | retrieval-pool construction (DINOv2 embeddings, chunk dictionaries, FAST tokenizer fit) |
+| `scripts/`, `src/victr/` | retrieval-pool construction (DINOv2 embeddings, chunk dictionaries, FAST tokenizer fit) |
 
 ## Setup
 
@@ -127,9 +127,9 @@ learning-rate schedules in `config.py` were tuned for the original batch sizes.
 
 ## Rebuilding the retrieval pools (optional)
 
-The pools downloaded in step 1 were built with `scripts/build_retrieval_pool.py`
+The pools downloaded in step 1 were built with `scripts/victr/build_retrieval_pool.py`
 (DINOv2 chunk embeddings + RoboDopamine progress values),
-`scripts/fit_canonical_fast_tokenizer.py`, and `scripts/build_pool_canonical_3cam.py`
+`scripts/victr/fit_canonical_fast_tokenizer.py`, and `scripts/victr/build_pool_canonical_3cam.py`
 (adds all three camera views and pre-tokenized 30-step action windows). These scripts
 run in the top-level environment (`uv sync` at the repo root).
 

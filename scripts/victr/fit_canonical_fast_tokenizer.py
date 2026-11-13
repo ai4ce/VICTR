@@ -22,13 +22,13 @@ two ways, both required for correctness, not just convention:
      slightly different) quantile estimates of nominally the same distribution.
 
 Runs in openpi's venv (confirmed lerobot.scripts.lerobot_train_tokenizer is
-importable there, and this needs openpi.policies.yor_rotation) -- NOT viktr's venv,
+importable there, and this needs openpi.policies.yor_rotation) -- NOT victr's venv,
 unlike fit_expanded_fast_tokenizer.py. Reads icl-dataset-fixed-obs's raw `action`
 column directly via pandas (no LeRobotDataset object, no video decode needed --
 action-only, same pattern already used by patch_pool_canonical.py this session).
 
-Usage (from the viktr repo root, via openpi's venv):
-    third_party/openpi/.venv/bin/python3 scripts/fit_canonical_fast_tokenizer.py \
+Usage (from the victr repo root, via openpi's venv):
+    third_party/openpi/.venv/bin/python3 scripts/victr/fit_canonical_fast_tokenizer.py \
         --output-dir third_party/openpi/assets/fast_tokenizer/yor-icl-canonical
 """
 
@@ -43,7 +43,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[2]
 _OPENPI = _REPO / "third_party" / "openpi"
 sys.path.insert(0, str(_OPENPI / "src"))
 from openpi.policies import yor_rotation  # noqa: E402

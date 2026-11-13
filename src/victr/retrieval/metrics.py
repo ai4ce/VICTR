@@ -15,8 +15,8 @@ from typing import Literal
 import numpy as np
 import torch
 
-from viktr.retrieval.chunk_dictionary import Chunk, ChunkDictionary
-from viktr.retrieval.fusion import ValueFusionMLP
+from victr.retrieval.chunk_dictionary import Chunk, ChunkDictionary
+from victr.retrieval.fusion import ValueFusionMLP
 
 RetrievalMetric = Literal["vision", "value", "vision+value"]
 
@@ -43,7 +43,7 @@ def vision_retrieve(query_embedding: np.ndarray, pool: ChunkDictionary, k: int) 
 def value_retrieve(query_value: float, pool: ChunkDictionary, k: int) -> RetrievalResult:
     """Pure value-alignment retrieval: |v_hat_t - v'| in progress space."""
     if pool.key_values is None:
-        raise ValueError("pool has no key_values; annotate it first (viktr.value.annotate)")
+        raise ValueError("pool has no key_values; annotate it first (victr.value.annotate)")
     distances = np.abs(pool.key_values - query_value)
     return _topk(distances, pool, k)
 
@@ -57,7 +57,7 @@ def fused_retrieve(
 ) -> RetrievalResult:
     """Learned fusion of vision + value distances (Sec III-G)."""
     if pool.key_values is None:
-        raise ValueError("pool has no key_values; annotate it first (viktr.value.annotate)")
+        raise ValueError("pool has no key_values; annotate it first (victr.value.annotate)")
     d_vis = np.linalg.norm(pool.key_embeddings - query_embedding[None, :], axis=1)
     d_val = np.abs(pool.key_values - query_value)
     device = next(fusion.parameters()).device

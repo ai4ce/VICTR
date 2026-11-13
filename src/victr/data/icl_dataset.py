@@ -1,6 +1,6 @@
 """Adapts `icl-dataset` (the real bimanual YOR data, vendored setup in
 `third_party/nyu-finger-robot`) into the per-episode arrays
-`viktr.retrieval.chunk_dictionary.build_chunk_dictionary` expects, plus
+`victr.retrieval.chunk_dictionary.build_chunk_dictionary` expects, plus
 progress-value annotation and the train/pool/test episode split.
 
 Progress-value annotation defaults to the RoboDopamine value model's real,
@@ -9,7 +9,7 @@ per-frame estimates (`robodopamine_value_at`/`robodopamine_values`, reading
 (`oracle_value_at`/`oracle_values`, Eq. 7) -- the latter remain available as a
 fallback/ablation for episodes RoboDopamine doesn't cover.
 
-Mirrors `viktr.data.libero`'s two functions (`episodes_for_task`,
+Mirrors `victr.data.libero`'s two functions (`episodes_for_task`,
 `load_episode_arrays`), but icl-dataset carries a per-episode `tasks` column
 directly in `meta/episodes` (a 1-element list), unlike LIBERO's per-frame-only
 `task_index`, so task resolution here is a plain parquet filter rather than a
@@ -97,7 +97,7 @@ def _excluded_episode_indices(root: Path) -> set[int]:
     strict superset: it additionally drops excess *successful* episodes per task to
     balance per-task episode counts, trimming the longest-duration outliers first
     (e.g. 'sort the items into their containers' 100->50 valid episodes). See that
-    file's `note` field for details. This means viktr's episode set can be a strict
+    file's `note` field for details. This means victr's episode set can be a strict
     subset of what an unpatched nyu-finger-robot config with the same filter_tasks
     would see, for tasks the Hub update rebalanced."""
     excl_file = Path(__file__).parent / "icl_dataset_v2_excluded_episodes.json"
@@ -130,7 +130,7 @@ def all_tasks(root: Path = DEFAULT_ROOT) -> list[str]:
     return sorted(t for t in task0.unique() if t)
 
 
-# Tasks excluded from the "expanded" dataset -- viktr's second, broader VICTR
+# Tasks excluded from the "expanded" dataset -- victr's second, broader VICTR
 # experiment beyond the original 4-task pnp subset (TASKS) above: assembling
 # gears, opening the notebook, anything going into grocery bags, and octagon
 # stacking.
@@ -233,7 +233,7 @@ def oracle_values(episode_length: int) -> np.ndarray:
     """Linear task-progress value per frame, Eq. 7 of the VICTR paper (notes/vktr.pdf,
     Sec III-C): frame t of a successful T-frame episode -> t/(T-1). Remapped from the
     paper's literal [-1, 0] to [0, 1] to match this codebase's existing convention
-    (viktr.value.base.ValueEstimator's docstring, Chunk.value) -- a harmless affine
+    (victr.value.base.ValueEstimator's docstring, Chunk.value) -- a harmless affine
     reparameterization, since retrieval only ever consumes |value difference|.
     Every episode this is called on is already known-successful (icl_dataset.
     episodes_for_task / build_splits only select the dataset's `success` episodes),
@@ -304,7 +304,7 @@ def load_episode_arrays(
     """Returns one dict per episode: {"episode_index", "images": {cam: (T,H,W,3)
     uint8}, "proprio": (T,15) float32, "actions": (T,20) float32, "values": (T,)
     float32}. `camera_keys` is required (not defaulted to all cameras, unlike
-    viktr.data.libero's version) -- callers should pass just the retrieval
+    victr.data.libero's version) -- callers should pass just the retrieval
     `primary_camera` when building a chunk dictionary, since
     VictrPolicy._prepare_context_images only ever reads one camera per chunk
     (pi05_context.py) and storing all 3 views here would triple memory for

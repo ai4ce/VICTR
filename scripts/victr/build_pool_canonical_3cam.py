@@ -36,7 +36,7 @@ Must run in openpi's venv (torch/av for video decode, transformers for the
 FAST tokenizer) with the ffmpeg7 shim set up (see run_pool_canonical_3cam.sh).
 
 Usage:
-    third_party/openpi/.venv/bin/python3 scripts/build_pool_canonical_3cam.py
+    third_party/openpi/.venv/bin/python3 scripts/victr/build_pool_canonical_3cam.py
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ import numpy as np
 import torch
 from scipy.fft import dct, idct
 
-_OPENPI = pathlib.Path(__file__).resolve().parents[1] / "third_party" / "openpi"
+_OPENPI = pathlib.Path(__file__).resolve().parents[2] / "third_party" / "openpi"
 sys.path.insert(0, str(_OPENPI / "src"))
 from lerobot.datasets.lerobot_dataset import LeRobotDataset  # noqa: E402
 

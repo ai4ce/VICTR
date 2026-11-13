@@ -38,9 +38,9 @@ from dataclasses import dataclass, field
 import numpy as np
 import torch
 
-from viktr.retrieval.chunk_dictionary import ChunkDictionary
-from viktr.retrieval.fusion import ValueFusionMLP
-from viktr.retrieval.metrics import RetrievalResult, fused_retrieve
+from victr.retrieval.chunk_dictionary import ChunkDictionary
+from victr.retrieval.fusion import ValueFusionMLP
+from victr.retrieval.metrics import RetrievalResult, fused_retrieve
 
 
 @dataclass
@@ -63,7 +63,7 @@ def soft_fused_retrieve(
         return SoftRetrievalResult(chunks=hard.chunks, scores=hard.scores, weights=ones)
 
     if pool.key_values is None:
-        raise ValueError("pool has no key_values; annotate it first (viktr.data.icl_dataset.robodopamine_values)")
+        raise ValueError("pool has no key_values; annotate it first (victr.data.icl_dataset.robodopamine_values)")
     if k > len(pool):
         raise ValueError(f"k={k} exceeds pool size {len(pool)}")
 

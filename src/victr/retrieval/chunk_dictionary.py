@@ -15,7 +15,7 @@ from pathlib import Path
 
 import numpy as np
 
-from viktr.retrieval.embeddings import embed_frames, load_dinov2
+from victr.retrieval.embeddings import embed_frames, load_dinov2
 
 
 @dataclass
@@ -84,7 +84,7 @@ def build_chunk_dictionary(
     embed_model=None,
 ) -> ChunkDictionary:
     """episodes: one dict per demo, each with "episode_index", "images" (camera_key -> (T,H,W,3) uint8),
-    "proprio", "actions", and optionally "values" (T,) float32 (see viktr.value.annotate). `primary_camera`
+    "proprio", "actions", and optionally "values" (T,) float32 (see victr.value.annotate). `primary_camera`
     selects which view's first frame keys each chunk (both for the DINOv2 embedding and, if annotated, value)."""
     model = embed_model if embed_model is not None else load_dinov2()
     all_chunks: list[Chunk] = []
@@ -129,6 +129,6 @@ def load_pool(path: Path) -> ChunkDictionary:
 
 
 def load_pools(pool_dir: Path, tasks: list[str], task_slug) -> dict[str, ChunkDictionary]:
-    """task_slug: viktr.data.icl_dataset.task_slug, passed in rather than imported
+    """task_slug: victr.data.icl_dataset.task_slug, passed in rather than imported
     here to avoid a retrieval -> data import (data already imports retrieval)."""
     return {task: load_pool(pool_dir / f"{task_slug(task)}.pkl") for task in tasks}
