@@ -1636,7 +1636,7 @@ def train(args: argparse.Namespace) -> None:
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Train a paper VFE experiment.")
     parser.add_argument("--exp-name", required=True, dest="exp_name", help="Experiment name. Outputs go to outputs/<exp-name>; wandb run name uses the same value.")
-    parser.add_argument("--data-split-config", default="configs/vfe_data_splits.json")
+    parser.add_argument("--data-split-config", default="configs/vfe/vfe_data_splits.json")
     parser.add_argument("--data-split-preset", default="icl_keep_true_all36_query80_ctx20_annotation_progress")
     parser.add_argument("--vfe-config", default=str(DEFAULT_VFE_PRESET_PATH))
     parser.add_argument("--vfe-preset", required=True)

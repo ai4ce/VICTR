@@ -333,7 +333,7 @@ def _load_lerobot_video_frames(
     except ImportError as exc:
         raise ImportError(
             "LeRobot context feature preprocessing requires PyAV. "
-            "Re-run scripts/setup_vfe_train.sh."
+            "Re-run scripts/vfe/setup_vfe_train.sh."
         ) from exc
 
     requested = set(int(index) for index in frame_indices)

@@ -2,8 +2,8 @@
 
 ## Data
 
-Set paths in `configs/vfe_data_splits.json` for training and in the `evaluation`
-section of `configs/paper_experiments.json` for evaluation.
+Set paths in `configs/vfe/vfe_data_splits.json` for training and in the `evaluation`
+section of `configs/vfe/paper_experiments.json` for evaluation.
 
 | Resource | Required contents |
 | --- | --- |
@@ -38,7 +38,7 @@ The main model uses global batch 320 on eight GPUs. Its final training segment
 resumes the step-6,800 checkpoint:
 
 ```bash
-python scripts/paper.py ic_vfe train \
+python scripts/vfe/paper.py ic_vfe train \
   --resume /path/to/checkpoint_step_6800_bs320_cursor26.pt --execute
 ```
 
@@ -59,8 +59,8 @@ To evaluate the pending ablation after training, supply its new checkpoint and
 prediction directory explicitly:
 
 ```bash
-python scripts/paper.py ic_vfe_no_block_embedding evaluate --checkpoint /path/to/checkpoint.pt --execute
-python scripts/paper.py ic_vfe_no_block_embedding score --source /path/to/raw_predictions --execute
+python scripts/vfe/paper.py ic_vfe_no_block_embedding evaluate --checkpoint /path/to/checkpoint.pt --execute
+python scripts/vfe/paper.py ic_vfe_no_block_embedding score --source /path/to/raw_predictions --execute
 ```
 
 ## Scoring
@@ -70,7 +70,7 @@ and checkpoint consistency. It scores raw saved predictions against human
 annotations, averages over contexts within each query, and gives each query
 equal weight. EMA, when configured, is applied once per trajectory.
 
-The active conventions are recorded per experiment in `configs/paper_experiments.json`.
+The active conventions are recorded per experiment in `configs/vfe/paper_experiments.json`.
 The archived configurations use causal EMA(0.5) for IC-VFE and the pending
 no-block model; no-context and RECAP use raw predictions. IC-VFE and RECAP use
 raw float64 human percentages and exclude undefined correlations (119 scored

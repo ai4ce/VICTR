@@ -252,7 +252,7 @@ class VfeFrameDataset(Dataset):
             if split != "all" and "demo_split" not in demo:
                 raise ValueError(
                     f"{self.processed_dir} does not contain per-demo train/test split metadata. "
-                    "Re-run scripts/preprocess_vfe.py with the matching data preset."
+                    "Re-run scripts/vfe/preprocess_vfe.py with the matching data preset."
                 )
             demo_split = demo.get("demo_split", "all")
             if split == "all" or demo_split == split:
@@ -402,7 +402,7 @@ class VfeFrameDataset(Dataset):
                 import pyarrow.parquet as pq
             except ImportError as exc:
                 raise ImportError(
-                    "LeRobot VFE data requires pyarrow>=24. Re-run scripts/setup_vfe_train.sh."
+                    "LeRobot VFE data requires pyarrow>=24. Re-run scripts/vfe/setup_vfe_train.sh."
                 ) from exc
             try:
                 table = pq.read_table(parquet_path, columns=[key])
@@ -432,7 +432,7 @@ class VfeFrameDataset(Dataset):
             import av
         except ImportError as exc:
             raise ImportError(
-                "LeRobot VFE video loading requires PyAV. Re-run scripts/setup_vfe_train.sh."
+                "LeRobot VFE video loading requires PyAV. Re-run scripts/vfe/setup_vfe_train.sh."
             ) from exc
         if video_path not in self._video_cache:
             if len(self._video_cache) >= 16:

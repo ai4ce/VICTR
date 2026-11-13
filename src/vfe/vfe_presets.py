@@ -8,7 +8,7 @@ from typing import Any
 from .observation_history import normalize_query_history_offsets
 
 
-DEFAULT_VFE_PRESET_PATH = Path("configs/vfe_presets.json")
+DEFAULT_VFE_PRESET_PATH = Path("configs/vfe/vfe_presets.json")
 NO_CONTEXT_BACKBONE_MAP = {
     "siglip_gemma_context": "siglip_gemma",
     "gemma3_native_vision_context": "gemma3_native_vision",

@@ -15,15 +15,15 @@ from paper import build_command
 from score_paper import correlations, mean_scores, score
 from vfe.scoring import causal_ema
 
-ROOT = Path(__file__).resolve().parents[1]
-CONFIG = json.loads((ROOT / "configs/paper_experiments.json").read_text())
+ROOT = Path(__file__).resolve().parents[2]
+CONFIG = json.loads((ROOT / "configs/vfe/paper_experiments.json").read_text())
 
 
 def args_for(name, stage, **kwargs):
     return argparse.Namespace(experiment=name, stage=stage, resume=None, gpus=None,
                               exp_name=None, resume_model_only=False, allow_inexact_resume=False,
                               checkpoint=None, output=None, batch_size=4, source=None,
-                              config=ROOT / "configs/paper_experiments.json", **kwargs)
+                              config=ROOT / "configs/vfe/paper_experiments.json", **kwargs)
 
 
 def test_only_four_models_and_saved_source_settings_are_preserved():
@@ -60,7 +60,7 @@ def test_training_commands_parse_and_preserve_global_batch(name):
     if name == "ic_vfe":
         args.resume = "checkpoint_step_6800_bs320_cursor26.pt"
     command = build_command(args, CONFIG)
-    parsed = build_arg_parser().parse_args(command[command.index("scripts/train_vfe.py") + 1:])
+    parsed = build_arg_parser().parse_args(command[command.index("scripts/vfe/train_vfe.py") + 1:])
     training = CONFIG["experiments"][name]["training"]
     assert parsed.tasks_per_batch * parsed.samples_per_task * training["distributed"]["world_size"] == training["distributed"]["global_batch_size"]
     assert parsed.max_steps == training["max_steps"]
@@ -152,7 +152,7 @@ def test_saved_prediction_scoring_requires_one_complete_raw_run(tmp_path, corrup
 
 def test_main_10k_release_and_training_agree():
     spec = CONFIG["experiments"]["ic_vfe"]
-    releases = json.loads((ROOT / "configs/checkpoints.json").read_text())
+    releases = json.loads((ROOT / "configs/vfe/checkpoints.json").read_text())
     published = releases["models"]["ic_vfe"]
     assert spec["checkpoint_step"] == published["step"] == 10000
     assert published["filename"] == "checkpoint_step_10000.pt"
@@ -169,7 +169,7 @@ def test_main_10k_release_and_training_agree():
 @pytest.mark.parametrize("name", ["ic_vfe", "ic_vfe_no_context", "recap"])
 def test_released_models_default_to_download_and_prediction_locations(name):
     spec = CONFIG["experiments"][name]
-    releases = json.loads((ROOT / "configs/checkpoints.json").read_text())
+    releases = json.loads((ROOT / "configs/vfe/checkpoints.json").read_text())
     command = build_command(args_for(name, "evaluate"), CONFIG)
     assert command[command.index("--checkpoint") + 1] == f"checkpoints/{name}/{releases['models'][name]['filename']}"
     output = command[command.index("--output-dir") + 1]

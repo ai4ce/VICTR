@@ -10,8 +10,8 @@ from .labels import (
 )
 
 
-DEFAULT_PRESET_PATH = Path("configs/vfe_data_splits.json")
-DEFAULT_CONTEXT_MANIFEST_PATH = Path("configs/icl_dataset_keep_true_all36_query80_ctx20.json")
+DEFAULT_PRESET_PATH = Path("configs/vfe/vfe_data_splits.json")
+DEFAULT_CONTEXT_MANIFEST_PATH = Path("configs/vfe/icl_dataset_keep_true_all36_query80_ctx20.json")
 GROUND_TRUTH_VERSION_FIELD = "value_" + "target_semantics"
 PRESET_METADATA_KEYS = {
     "description",
@@ -153,7 +153,7 @@ def resolve_processed_dir(output_dir: str | Path, ground_truth_version: str) -> 
     if not (requested_dir / "summary.json").is_file():
         raise FileNotFoundError(
             f"Missing preprocessed ground truth for {ground_truth_version!r}: {requested_dir}. "
-            "Run scripts/preprocess_vfe.py with the matching data-split preset first."
+            "Run scripts/vfe/preprocess_vfe.py with the matching data-split preset first."
         )
     return requested_dir
 

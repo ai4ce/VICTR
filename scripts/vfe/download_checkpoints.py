@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def sha256(path: Path) -> str:
@@ -44,7 +44,7 @@ def verify_release(folder: Path, spec: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("experiment", choices=["ic_vfe", "ic_vfe_no_context", "recap", "all"])
-    parser.add_argument("--manifest", type=Path, default=ROOT / "configs/checkpoints.json")
+    parser.add_argument("--manifest", type=Path, default=ROOT / "configs/vfe/checkpoints.json")
     parser.add_argument("--output", type=Path, default=ROOT / "checkpoints", help="Parent directory; each experiment gets its own subdirectory")
     parser.add_argument("--verify-only", action="store_true", help="Verify existing local files without network access")
     args = parser.parse_args()

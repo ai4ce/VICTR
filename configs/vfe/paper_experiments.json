@@ -1,7 +1,7 @@
 {
   "source_commit": "b76f855",
-  "vfe_config": "configs/vfe_presets.json",
-  "data_split_config": "configs/vfe_data_splits.json",
+  "vfe_config": "configs/vfe/vfe_presets.json",
+  "data_split_config": "configs/vfe/vfe_data_splits.json",
   "evaluation": {
     "dataset_root": "data/lerobot/adityx23/icl-demo-dataset-keep-true",
     "annotation_root": "data/annotations/zs_robodopamine_icl_demo_dataset_continuous",

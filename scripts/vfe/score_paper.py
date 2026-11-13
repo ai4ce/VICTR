@@ -12,7 +12,7 @@ import sys
 import numpy as np
 from scipy.stats import kendalltau, pearsonr
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 from vfe.vfe_presets import load_vfe_preset
 from vfe.scoring import annotation_records, causal_ema, load_annotations, metrics, require
@@ -123,7 +123,7 @@ def score(config: dict, experiment: str, source: Path, root: Path = ROOT) -> dic
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=ROOT / "configs/paper_experiments.json")
+    parser.add_argument("--config", type=Path, default=ROOT / "configs/vfe/paper_experiments.json")
     parser.add_argument("--experiment", required=True)
     parser.add_argument("--source", type=Path)
     parser.add_argument("--output", type=Path, help="Optional new JSON file; existing files are not overwritten")

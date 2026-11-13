@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import torch.distributed as dist
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from vfe.evaluate import (
     aggregate_context_cache_summaries,

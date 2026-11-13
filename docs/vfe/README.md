@@ -3,7 +3,7 @@
 Code and checkpoints for the value-function estimation component of
 **VICTR: Value-Informed In-Context Learning for Vision-Language-Action Models**.
 
-[Paper](https://arxiv.org/abs/2611.08698) · [Project](https://ai4ce.github.io/VICTR/) · [Reproduction guide](docs/reproduction.md)
+[Paper](https://arxiv.org/abs/2611.08698) · [Project](https://ai4ce.github.io/VICTR/) · [Reproduction guide](reproduction.md)
 
 IC-VFE estimates task progress from three camera views, proprioception, a task
 instruction, and a reference demonstration. This repository provides data
@@ -43,21 +43,21 @@ by the common launcher; set `WANDB_MODE=online` to enable it.
 ## Download and evaluate
 
 ```bash
-python scripts/download_checkpoints.py all
-python scripts/download_checkpoints.py all --verify-only
+python scripts/vfe/download_checkpoints.py all
+python scripts/vfe/download_checkpoints.py all --verify-only
 ```
 
 Downloads use immutable Hugging Face revisions and SHA256 verification. Each
 package includes model parameters, optimizer/RNG state, model configuration,
 and a portable `run_config.json`. Weights are stored outside Git.
 
-Set the dataset and annotation paths as described in the [data guide](docs/reproduction.md#data).
+Set the dataset and annotation paths as described in the [data guide](reproduction.md#data).
 Then evaluate and score a released model:
 
 ```bash
-python scripts/paper.py ic_vfe validate-data --execute
-python scripts/paper.py ic_vfe evaluate --execute
-python scripts/paper.py ic_vfe score --output outputs/ic_vfe_scores.json --execute
+python scripts/vfe/paper.py ic_vfe validate-data --execute
+python scripts/vfe/paper.py ic_vfe evaluate --execute
+python scripts/vfe/paper.py ic_vfe score --output outputs/ic_vfe_scores.json --execute
 ```
 
 Replace `ic_vfe` with `ic_vfe_no_context` or `recap` to use a baseline. Defaults
@@ -69,15 +69,15 @@ command. `validate-data` performs CPU checks without loading model weights.
 ## Training
 
 ```bash
-python scripts/paper.py ic_vfe preprocess --execute
-python scripts/paper.py ic_vfe features --execute
-python scripts/paper.py ic_vfe_no_context train --execute
-python scripts/paper.py recap train --execute
-python scripts/paper.py ic_vfe_no_block_embedding train --execute
+python scripts/vfe/paper.py ic_vfe preprocess --execute
+python scripts/vfe/paper.py ic_vfe features --execute
+python scripts/vfe/paper.py ic_vfe_no_context train --execute
+python scripts/vfe/paper.py recap train --execute
+python scripts/vfe/paper.py ic_vfe_no_block_embedding train --execute
 ```
 
 Feature caching is needed only for context models. The main IC-VFE training
-recipe requires a resume checkpoint. See the [training guide](docs/reproduction.md#training)
+recipe requires a resume checkpoint. See the [training guide](reproduction.md#training)
 for that recipe, pretraining, batch sizes, and the pending ablation.
 
 ## Repository layout
@@ -85,20 +85,20 @@ for that recipe, pretraining, batch sizes, and the pending ablation.
 | Path | Contents |
 | --- | --- |
 | `src/vfe/` | Models, data, training, inference, and scoring helpers |
-| `scripts/paper.py` | Common preprocessing, training, and evaluation launcher |
-| `scripts/download_checkpoints.py` | Pinned, verified checkpoint downloads |
-| `scripts/score_paper.py` | Saved-prediction scoring |
-| `configs/vfe_presets.json` | Four model presets with shared defaults |
-| `configs/vfe_data_splits.json` | Annotation training and linear pretraining presets |
-| `configs/icl_dataset_keep_true_all36_query80_ctx20.json` | Fixed training episode split |
-| `configs/paper_experiments.json` | Experiments, paths, training settings, scoring, and provenance |
-| `configs/checkpoints.json` | Hugging Face revisions and weight checksums |
+| `scripts/vfe/paper.py` | Common preprocessing, training, and evaluation launcher |
+| `scripts/vfe/download_checkpoints.py` | Pinned, verified checkpoint downloads |
+| `scripts/vfe/score_paper.py` | Saved-prediction scoring |
+| `configs/vfe/vfe_presets.json` | Four model presets with shared defaults |
+| `configs/vfe/vfe_data_splits.json` | Annotation training and linear pretraining presets |
+| `configs/vfe/icl_dataset_keep_true_all36_query80_ctx20.json` | Fixed training episode split |
+| `configs/vfe/paper_experiments.json` | Experiments, paths, training settings, scoring, and provenance |
+| `configs/vfe/checkpoints.json` | Hugging Face revisions and weight checksums |
 | `tests/` | CPU regression tests |
 
 Run tests with `python -m pip install pytest` followed by `python -m pytest -q`.
 Tests do not download backbones or run GPU training. Data/annotation download
 links and the missing no-block checkpoint are listed in the
-[release coverage](docs/reproduction.md#release-coverage).
+[release coverage](reproduction.md#release-coverage).
 
 ## Citation
 
