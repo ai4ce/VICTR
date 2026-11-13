@@ -25,17 +25,17 @@ and `observation.state`; the two context models share the same feature cache.
 
 ## Installation
 
-Use Python 3.10+ and install a PyTorch build compatible with your CUDA runtime.
+Use Python 3.12+ and install a PyTorch build compatible with your CUDA runtime.
 Run the following commands from the repository root:
 
 ```bash
-git clone --branch IC-VFE --single-branch https://github.com/ai4ce/VICTR.git
+git clone https://github.com/ai4ce/VICTR.git
 cd VICTR
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-vfe.txt
 python -m pip install --no-deps -e .
 ```
 
-The recorded dependency versions are in `requirements.txt`. Access to the
+The recorded dependency versions are in `requirements-vfe.txt`. Access to the
 Gemma pretrained backbones is required. GPU training and inference require
 suitable GPU hardware; cluster users should use their scheduler. W&B is disabled
 by the common launcher; set `WANDB_MODE=online` to enable it.

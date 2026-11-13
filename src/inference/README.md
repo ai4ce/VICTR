@@ -19,7 +19,7 @@ The pieces run in three Python environments:
 | Environment | Used by | Setup |
 | --- | --- | --- |
 | openpi (JAX, `uv`) | inference server, retrieval | clone openpi at `15a9616`, then apply `openpi_overlay/` (below) |
-| lerobot (PyTorch) | IC-VFE and Robometer workers, legacy lerobot server | `lerobot`, plus the `vfe` package from the `IC-VFE` branch for the IC-VFE worker |
+| lerobot (PyTorch) | IC-VFE and Robometer workers, legacy lerobot server | `lerobot`, plus the `vfe` package (`src/vfe`, `pip install -e '.[vfe]'` from the repo root) for the IC-VFE worker |
 | UI | `inference.py` | Python 3.10+, `Pillow` |
 
 ```bash
@@ -124,9 +124,9 @@ cd openpi && .venv/bin/python ../inference_server_openpi.py \
 | `assets/yor_kinematics/` | Kinematics-only MJCF for `yor_fk.py` |
 | `assets/onion_index.json` | Task → reference episode index for the onion-skin overlay |
 | `assets/subtask_plans.json` | Per-task subtask lists used for partial-success scoring |
-| `agent_baseline/` | Coding-agent experiments (below) |
+| [`experiments/agent_baseline/`](../../experiments/agent_baseline/) | Coding-agent experiments (below) |
 
-## Coding-agent experiments (`agent_baseline/`)
+## Coding-agent experiments (`experiments/agent_baseline/`)
 
 We tested whether a coding agent (Codex Astra) can do robot in-context learning
 on the same robot and tasks. Each scored attempt worked like this:

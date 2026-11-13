@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite the VICTR paper."
-title: "VICTR: In-Context Value Function Estimation"
+title: "VICTR: Value-Informed In-Context Learning for Vision-Language-Action Models"
 type: software
-repository-code: "https://github.com/ai4ce/VICTR/tree/IC-VFE"
+repository-code: "https://github.com/ai4ce/VICTR/"
 url: "https://ai4ce.github.io/VICTR/"
 authors:
   - family-names: Macesanu

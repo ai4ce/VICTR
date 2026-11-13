@@ -1,20 +1,49 @@
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "victr-vfe"
+name = "victr"
 version = "0.1.0"
-description = "VFE experiments accompanying VICTR"
-requires-python = ">=3.10"
-dynamic = ["dependencies"]
+description = "VICTR: Value-Informed In-Context Learning for Vision-Language-Action Models"
+readme = "README.md"
+requires-python = ">=3.12"
+# Base install: VICTR data-preparation utilities (retrieval-pool construction, DINOv2 embeddings).
+# VICTR policy training runs in third_party/openpi's own environment; the inference stack
+# (src/inference) spans robot / GPU-server / UI environments -- see their READMEs.
+dependencies = [
+    # `dataset` extra: pandas/pyarrow/datasets, for reading icl-dataset's meta parquet shards.
+    "lerobot[dataset]",
+    "scipy>=1.11",
+]
 
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
+[project.optional-dependencies]
+# IC-VFE training/evaluation. Exact versions used for the paper are in requirements-vfe.txt.
+vfe = [
+    "torch>=2.6",
+    "torchvision>=0.21",
+    "transformers>=5.13",
+    "huggingface-hub>=1.22",
+    "numpy>=2.2",
+    "pyarrow>=24",
+    "av>=14",
+    "h5py>=3.16",
+    "accelerate>=1.14",
+    "safetensors>=0.8",
+    "sentencepiece>=0.2",
+    "pillow>=11",
+    "matplotlib>=3.10",
+    "wandb>=0.28",
+]
+test = ["pytest>=8"]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/victr", "src/vfe"]
+
+[tool.uv.sources]
+# Same lerobot commit (v0.6.1) the paper's data preparation was run with.
+lerobot = { git = "https://github.com/huggingface/lerobot.git", rev = "7e241bd" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src", "scripts"]
+pythonpath = ["src", "scripts/vfe"]
