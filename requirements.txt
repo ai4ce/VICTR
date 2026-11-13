@@ -1,0 +1,18 @@
+# Runtime versions observed in the existing vfe-train environment during cleanup.
+# These are not claimed to be the historical training environment lockfile.
+# Install the CUDA-compatible PyTorch build separately if your platform requires it.
+torch==2.6.0
+torchvision==0.21.0
+transformers==5.13.0
+huggingface-hub==1.22.0
+numpy==2.2.6
+scipy==1.15.3
+pyarrow==25.0.1
+av==17.1.0
+h5py==3.16.0
+accelerate==1.14.0
+safetensors==0.8.0
+sentencepiece==0.2.1
+pillow==12.2.0
+matplotlib==3.10.9
+wandb==0.28.0

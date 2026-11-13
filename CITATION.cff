@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the VICTR paper."
+title: "VICTR: In-Context Value Function Estimation"
+type: software
+repository-code: "https://github.com/ai4ce/VICTR/tree/IC-VFE"
+url: "https://ai4ce.github.io/VICTR/"
+authors:
+  - family-names: Macesanu
+    given-names: Luca
+  - family-names: Zhang
+    given-names: Tianluo
+  - family-names: Patil
+    given-names: Aditya
+  - family-names: Sharma
+    given-names: Archit
+  - family-names: Angers
+    given-names: Kevin
+  - family-names: Clark
+    given-names: Christopher M.
+  - family-names: Feng
+    given-names: Chen
+  - family-names: Zhang
+    given-names: Juexiao
+preferred-citation:
+  type: article
+  title: "VICTR: Value-Informed In-Context Learning for Vision-Language-Action Models"
+  authors:
+    - family-names: Macesanu
+      given-names: Luca
+    - family-names: Zhang
+      given-names: Tianluo
+    - family-names: Patil
+      given-names: Aditya
+    - family-names: Sharma
+      given-names: Archit
+    - family-names: Angers
+      given-names: Kevin
+    - family-names: Clark
+      given-names: Christopher M.
+    - family-names: Feng
+      given-names: Chen
+    - family-names: Zhang
+      given-names: Juexiao
+  year: 2026
+  journal: arXiv
+  url: "https://arxiv.org/abs/2611.08698"
+  identifiers:
+    - type: other
+      value: "arXiv:2611.08698"
