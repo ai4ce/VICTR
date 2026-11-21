@@ -1,20 +1,107 @@
-# VICTR
+<div align="center">
 
-[Paper](https://arxiv.org/pdf/2611.08698v1) ·
-[Hugging Face collection](https://huggingface.co/collections/ai4ce/victr-value-informed-in-context-learning-for-vlas-6af362deff10640a6be06b31) ·
-[Dataset](https://huggingface.co/datasets/lair-nyu/victr-icl-dataset) ·
-[Training assets](https://huggingface.co/lair-nyu/victr-assets)
+# VICTR: Value-Informed In-Context Learning<br>for Vision-Language-Action Models
 
-VICTR (Value-Informed Context Retrieval) is an in-context-learning policy for
-vision-language-action models. For every observation it retrieves a demonstration
-chunk from a pool, using a score that fuses DINOv2 visual similarity with a progress
-value estimate, and feeds that chunk (3 camera views + a tokenized state/action
-summary) into a context-conditioned π0.5 policy that predicts the next action chunk.
+[Luca Macesanu](https://lucamacesanu.wixsite.com/lucamacesanu)<sup>1,\*</sup>,
+[Tianluo Zhang](https://lewiszzz-zhang.github.io/)<sup>1,\*</sup>,
+[Aditya Patil](https://adityx23.github.io/adityapatil/)<sup>1</sup>,
+[Archit Sharma](https://hannibalofbarca.github.io/)<sup>1</sup>,
+[Kevin Angers](https://kevinangers.github.io/)<sup>1</sup>,
+<br>
+[Christopher M. Clark](https://engineering.nyu.edu/faculty/christopher-clark)<sup>1,‡</sup>,
+[Chen Feng](https://engineering.nyu.edu/faculty/chen-feng)<sup>1,‡</sup>,
+and [Juexiao Zhang](https://juexzz.github.io/)<sup>1,‡</sup>
 
-This repository contains the training code used for the paper. Models and training
-live in a fork of [openpi](https://github.com/Physical-Intelligence/openpi)
-(`third_party/openpi`, JAX); this top-level repo holds the scripts that drive it plus
-the data-preparation utilities used to build the retrieval pools.
+<sup>1</sup>New York University &nbsp;·&nbsp; <sup>\*</sup>Co-first authors &nbsp;·&nbsp; <sup>‡</sup>Co-advising
+
+<p>
+  <a href="https://arxiv.org/abs/2611.08698"><img src="https://img.shields.io/badge/arXiv-2611.08698-b31b1b.svg?logo=arxiv&logoColor=white" alt="arXiv"></a>
+  <a href="https://arxiv.org/pdf/2611.08698"><img src="https://img.shields.io/badge/Paper-PDF-red.svg?logo=adobeacrobatreader&logoColor=white" alt="PDF"></a>
+  <a href="https://ai4ce.github.io/VICTR/"><img src="https://img.shields.io/badge/Project-Page-1f72b8.svg?logo=googlechrome&logoColor=white" alt="Project Page"></a>
+  <a href="https://huggingface.co/collections/ai4ce/victr-value-informed-in-context-learning-for-vlas-6af362deff10640a6be06b31"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Collection-ffc107.svg" alt="Hugging Face Collection"></a>
+  <a href="https://huggingface.co/datasets/lair-nyu/victr-icl-dataset"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-ICL%20Demos-ffc107.svg" alt="Dataset"></a>
+  <a href="https://huggingface.co/lair-nyu/victr-assets"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Assets-Training-ffc107.svg" alt="Training assets"></a>
+</p>
+
+<p>
+  <a href="#overview">Overview</a> ·
+  <a href="#code-release">Code release</a> ·
+  <a href="#setup">Setup</a> ·
+  <a href="#pipeline">Pipeline</a> ·
+  <a href="#citation">Citation</a>
+</p>
+
+<img src="assets/method.png" alt="VICTR method overview" width="100%">
+
+<p align="left"><sub><b>VICTR method overview.</b> The IC-VFE conditions on a reference
+demonstration (the shortest in the pool) to produce a progress estimate for the current
+observation. This is optionally fused with visual similarity, driving retrieval of a context
+chunk from the demonstration pool. The IC-VLA conditions on the retrieved chunk to predict
+the next action chunk, closing the loop without any parameter updates.</sub></p>
+
+</div>
+
+---
+
+## Overview
+
+**VICTR** enables in-context learning (ICL) in vision-language-action (VLA) models through
+*progress-informed* context retrieval. An **In-Context Value Function Estimator (IC-VFE)**
+conditions on a reference demonstration video, a language instruction and the current
+observation to estimate task-relative progress. VICTR uses that estimate to retrieve
+demonstration chunks from the matching stage of execution, and gives them as context to a
+π<sub>0.5</sub> policy post-trained for in-context action generation. No weights are
+updated at deployment.
+
+On unseen out-of-domain real-world manipulation tasks, VICTR raises the success rate of a
+fine-tuned π<sub>0.5</sub> baseline from **6.2% → 23.8%** and nearly doubles task progress,
+from **28.9% → 55.5%**.
+
+<details>
+<summary><b>Abstract</b></summary>
+<br>
+
+Recent advances in robot foundation models have highlighted the potential of in-context
+learning (ICL) for adapting robot behavior from demonstrations without further fine-tuning.
+Previous work has used retrieval-based post-training to equip pretrained
+vision-language-action (VLA) models with the capability for ICL by teaching them to
+condition action predictions on retrieved visually-relevant demonstration chunks. However,
+the effectiveness of retrieval hinges on selecting context relevant to the current execution
+stage, which visual similarity alone may not capture. We introduce VICTR, a framework
+enabling in-context learning in VLAs via progress-informed context retrieval built around an
+In-Context Value Function Estimator (IC-VFE). IC-VFE conditions on a reference demonstration
+video, a language instruction and the current observation to estimate task-relative
+*progress*. By conditioning progress estimation on a reference demonstration, IC-VFE can
+align the current state with a demonstrated execution even for tasks unseen during training.
+VICTR uses the estimated progress to select demonstration chunks at corresponding stages of
+execution and supplies them to a π<sub>0.5</sub> policy post-trained for in-context action
+generation. On unseen out-of-domain real-world manipulation tasks, VICTR raises the success
+rate from 6.2% for a fine-tuned π<sub>0.5</sub> baseline to 23.8% and nearly doubles the
+task progress rate, from 28.9% to 55.5%.
+
+</details>
+
+## Code release
+
+This branch (`release`) contains the **VICTR policy training code** used for the paper.
+Models and training live in a fork of [openpi](https://github.com/Physical-Intelligence/openpi)
+(`third_party/openpi`, JAX). This top-level repo holds the scripts that drive it, plus the
+data-preparation utilities used to build the retrieval pools. The other components are on
+their own branches:
+
+| Branch | Contents |
+| --- | --- |
+| **[`release`](https://github.com/ai4ce/VICTR/tree/release)** (this branch) | VICTR policy training: retrieval-pool construction and openpi training configs |
+| [`IC-VFE`](https://github.com/ai4ce/VICTR/tree/IC-VFE) | In-Context Value Function Estimation: training, evaluation and released checkpoints |
+| [`main`](https://github.com/ai4ce/VICTR/tree/main) | Robot inference stack (inference server, live retrieval, operator UI) and the coding-agent baseline experiments |
+| [`integrate`](https://github.com/ai4ce/VICTR/tree/integrate) | All three components combined in one tree |
+| [`pages`](https://github.com/ai4ce/VICTR/tree/pages) | Source of the [project page](https://ai4ce.github.io/VICTR/) |
+
+| Resource | Link |
+| --- | --- |
+| All models and datasets | [🤗 VICTR collection](https://huggingface.co/collections/ai4ce/victr-value-informed-in-context-learning-for-vlas-6af362deff10640a6be06b31) |
+| ICL demonstration dataset | [🤗 lair-nyu/victr-icl-dataset](https://huggingface.co/datasets/lair-nyu/victr-icl-dataset) |
+| Training assets (retrieval pools, FAST tokenizer, stage-1 checkpoint) | [🤗 lair-nyu/victr-assets](https://huggingface.co/lair-nyu/victr-assets) |
 
 ## Layout
 
@@ -34,7 +121,7 @@ the data-preparation utilities used to build the retrieval pools.
 Requirements: Linux x86_64, NVIDIA GPU(s) with CUDA 12, [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone --recurse-submodules <repo-url> victr
+git clone --branch release --recurse-submodules https://github.com/ai4ce/VICTR.git victr
 cd victr/third_party/openpi
 GIT_LFS_SKIP_SMUDGE=1 uv sync
 cd ../..
@@ -132,6 +219,21 @@ The pools downloaded in step 1 were built with `scripts/build_retrieval_pool.py`
 `scripts/fit_canonical_fast_tokenizer.py`, and `scripts/build_pool_canonical_3cam.py`
 (adds all three camera views and pre-tokenized 30-step action windows). These scripts
 run in the top-level environment (`uv sync` at the repo root).
+
+## Citation
+
+If you find VICTR useful in your research, please cite:
+
+```bibtex
+@article{macesanu2026victr,
+  title   = {VICTR: Value-Informed In-Context Learning for Vision-Language-Action Models},
+  author  = {Macesanu, Luca and Zhang, Tianluo and Patil, Aditya and Sharma, Archit and
+             Angers, Kevin and Clark, Christopher M. and Feng, Chen and Zhang, Juexiao},
+  journal = {arXiv preprint arXiv:2611.08698},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2611.08698}
+}
+```
 
 ## Acknowledgements
 
